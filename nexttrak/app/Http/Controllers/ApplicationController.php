@@ -6,10 +6,11 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ApplicationController extends Controller
-{
-    public function index() : View {
+{   
+    public function list(): View
+    {
         $applications = auth()->user()->applications()->latest()->get();
-        return view('dashboard', [
+        return view('applications.index', [
             'applications' => $applications,
         ]);
     }
