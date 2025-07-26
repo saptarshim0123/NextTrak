@@ -1,0 +1,74 @@
+# NextTrak - Personal Job Application Tracker
+
+## Project Overview
+NextTrak is a personal web application to help track job applications for upcoming placement season. The goal is a clean, calming, and efficient tool with a "Zen Garden" aesthetic.
+
+## Tech Stack
+- **Backend**: Laravel (PHP)
+- **Frontend**: Blade templates with Alpine.js
+- **Database**: PostgreSQL
+- **Styling**: Tailwind CSS with custom "Zen Garden" color palette
+- **Icons**: Heroicons
+- **Development**: Laravel Sail with Docker
+- **Authentication**: Laravel Breeze
+
+## Project Structure
+- Laravel application with standard MVC architecture
+- PostgreSQL database for data persistence
+- Docker-based development environment
+- Custom Tailwind configuration with Zen Garden theme
+
+## Completed Work ✅
+
+### Slice 1: Project Setup & Authentication
+- Set up complete local development environment using Laravel Sail and Docker
+- Configured PostgreSQL database
+- Installed and configured Laravel Breeze for full authentication system (register, login, logout)
+
+### Slice 2: Core Application - Backend Foundation
+- Designed and created database table to store job applications with all specified fields
+- Established relationship between users and their applications in the backend
+- Set up basic controller logic and routing needed for application pages
+
+### Slice 3: The Dedicated 'Applications' Page
+- Created dedicated /applications page
+- Added link to main navigation bar
+- Successfully debugged and fixed issues related to User model and theme toggling
+- Added custom "Zen Garden" color palette to Tailwind CSS
+- Installed Heroicons for UI
+
+## Remaining Roadmap
+
+### Slice 4: Application List UI
+- Build visual list of application cards on the /applications page
+
+### Slice 5: Interactive Cards (Expand & Edit)
+- Make cards clickable to expand into editable form using Alpine.js
+
+### Slice 6: Add & Delete Functionality
+- Implement logic to create new applications and delete existing ones
+
+### Slice 7: Search, Filter & Sort
+- Add tools to easily manage the application list
+
+### Slice 8: The Metrics Dashboard
+- Build main /dashboard page with charts and stats
+
+### Slice 9: Deployment
+- Deploy finished application to DigitalOcean
+
+## Key Features
+- User authentication and authorization
+- Job application tracking with comprehensive fields
+- Zen Garden aesthetic with calming color palette
+- Responsive design with Tailwind CSS
+- Interactive UI with Alpine.js
+
+## Development Environment
+- Laravel Sail with Docker
+- PostgreSQL database
+- Hot reloading for development
+- Standard Laravel project structure
+
+## Current Status
+Ready to begin Slice 4: Application List UI - building the visual list of application cards on the /applications page. 
