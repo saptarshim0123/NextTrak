@@ -9,16 +9,18 @@ export default {
         './resources/views/**/*.blade.php',
     ],
 
+    darkMode: 'class',
+
     theme: {
         extend: {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
-                colors: {
-                    'ivory-sand': '#F9F6EE', // Background
-                    'sage-green': '#8A9A5B', // Primary Accent
-                    'deep-slate': '#2F4F4F', // Text
-                }
             },
+            colors: {
+                'ivory-sand': '#F9F6EE', // Background
+                'sage-green': '#8A9A5B', // Primary Accent
+                'deep-slate': '#2F4F4F', // Text
+            }
         },
     },
 
