@@ -1,3 +1,97 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom smooth navigation animations */
+@layer components {
+    /* Smooth navigation link transitions */
+    .nav-link-smooth {
+        @apply transition-all duration-300 ease-out;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Enhanced hover effects for navigation */
+    .nav-hover-smooth {
+        @apply transform transition-all duration-300 ease-out;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Smooth underline animation */
+    .underline-smooth {
+        @apply transition-all duration-300 ease-out;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Enhanced focus states */
+    .nav-focus-smooth {
+        @apply transition-all duration-200 ease-out;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Mobile bottom navigation styles */
+    .mobile-bottom-nav {
+        @apply fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg;
+        /* Support for devices with home indicators (iPhone X and newer) */
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    /* Touch-friendly mobile navigation items */
+    .mobile-nav-item {
+        @apply flex flex-col items-center justify-center flex-1 py-3 px-4 rounded-lg transition-all duration-300 ease-out transform relative;
+        min-height: 64px; /* Ensure touch target is large enough */
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .mobile-nav-item:active {
+        @apply scale-95;
+        transition-duration: 150ms;
+    }
+    
+    /* Active state for mobile navigation */
+    .mobile-nav-active {
+        @apply text-sage-green bg-sage-green/10 dark:bg-sage-green/20;
+    }
+    
+    /* Inactive state for mobile navigation */
+    .mobile-nav-inactive {
+        @apply text-gray-500 dark:text-gray-400 hover:text-deep-slate dark:hover:text-gray-300;
+    }
+    
+    /* Mobile content padding to account for bottom navigation */
+    .mobile-content-padding {
+        @apply sm:hidden;
+        padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    }
+}
+
+/* Custom easing for even smoother animations */
+@layer utilities {
+    .ease-smooth {
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .ease-bounce-smooth {
+        transition-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+}
+
+/* Mobile-specific enhancements */
+@layer base {
+    /* Prevent zoom on input focus for better mobile UX */
+    input, select, textarea {
+        font-size: 16px;
+    }
+    
+    /* Smooth scrolling for mobile */
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    /* Better touch targets for mobile */
+    @media (max-width: 640px) {
+        button, a {
+            min-height: 44px;
+            min-width: 44px;
+        }
+    }
+}

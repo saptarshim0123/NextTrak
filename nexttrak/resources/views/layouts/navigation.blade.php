@@ -36,13 +36,30 @@
                     </a>
                 </div>
                 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                <!-- Page Title (Mobile Only) -->
+                <div class="sm:hidden flex items-center ml-4">
+                    <h1 class="text-lg font-semibold text-deep-slate dark:text-gray-200">
+                        @if(request()->routeIs('dashboard'))
+                            {{ __('Dashboard') }}
+                        @elseif(request()->routeIs('applications.index'))
+                            {{ __('Applications') }}
+                        @else
+                            {{ __('NextTrak') }}
+                        @endif
+                    </h1>
+                </div>
+                
+                <!-- Navigation Links (Desktop Only) -->
+                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex items-center">
+                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="relative group">
                         {{ __('Dashboard') }}
+                        <!-- Smooth underline indicator -->
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-sage-green underline-smooth group-hover:w-full"></div>
                     </x-nav-link>
-                    <x-nav-link :href="route('applications.index')" :active="request()->routeIs('applications.index')">
+                    <x-nav-link :href="route('applications.index')" :active="request()->routeIs('applications.index')" class="relative group">
                         {{ __('Applications') }}
+                        <!-- Smooth underline indicator -->
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-sage-green underline-smooth group-hover:w-full"></div>
                     </x-nav-link>
                 </div>
             </div>
@@ -110,7 +127,7 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button
-                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150">
+                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-deep-slate dark:hover:text-gray-300 hover:bg-sage-green/5 dark:hover:bg-sage-green/10 focus:outline-none transition-all duration-300 ease-out transform hover:scale-105">
                             <div>{{ Auth::user()->name }}</div>
 
                             <div class="ms-1">
@@ -141,7 +158,7 @@
                 </x-dropdown>
             </div>
 
-            <!-- Mobile menu button and dark mode toggler -->
+            <!-- Mobile Header Actions -->
             <div class="flex items-center sm:hidden space-x-2">
                 <!-- Dark/Light Mode Toggler (Mobile) -->
                 <button 
@@ -200,113 +217,69 @@
                     <span class="absolute inset-0 rounded-lg bg-gradient-to-r from-amber-400/20 to-indigo-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                 </button>
 
-                <!-- Hamburger -->
-                <button @click="open = ! open"
-                    class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-900 focus:text-gray-500 dark:focus:text-gray-400 transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex"
-                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round"
-                            stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Mobile Sidebar Overlay -->
-    <div 
-        x-show="open" 
-        x-transition:enter="transition-opacity ease-linear duration-300"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition-opacity ease-linear duration-300"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-        class="fixed inset-0 z-40 bg-black bg-opacity-50 sm:hidden"
-        @click="open = false"
-    ></div>
-
-    <!-- Mobile Sidebar -->
-    <div 
-        x-show="open"
-        x-transition:enter="transition ease-in-out duration-300 transform"
-        x-transition:enter-start="-translate-x-full"
-        x-transition:enter-end="translate-x-0"
-        x-transition:leave="transition ease-in-out duration-300 transform"
-        x-transition:leave-start="translate-x-0"
-        x-transition:leave-end="-translate-x-full"
-        class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-xl sm:hidden"
-    >
-        <!-- Sidebar Header -->
-        <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex items-center">
-                <x-application-logo class="block h-8 w-auto fill-current text-gray-800 dark:text-gray-200" />
-                <span class="ml-3 text-lg font-semibold text-gray-900 dark:text-gray-100">NextTrak</span>
-            </div>
-            <button @click="open = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
-
-        <!-- Sidebar Content -->
-        <div class="flex flex-col h-full">
-            <!-- Navigation Links -->
-            <div class="flex-1 px-4 py-6 space-y-2">
-                <a href="{{ route('dashboard') }}" 
-                   class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 {{ request()->routeIs('dashboard') ? 'bg-sage-green/10 text-sage-green dark:bg-sage-green/20' : '' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
-                    </svg>
-                    {{ __('Dashboard') }}
-                </a>
-                
-                <a href="{{ route('applications.index') }}" 
-                   class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 {{ request()->routeIs('applications.index') ? 'bg-sage-green/10 text-sage-green dark:bg-sage-green/20' : '' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    {{ __('Applications') }}
-                </a>
-            </div>
-
-            <!-- User Section -->
-            <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-6">
-                <div class="flex items-center mb-4">
-                    <div class="w-10 h-10 bg-sage-green rounded-full flex items-center justify-center shadow-lg">
-                        <span class="text-white font-semibold text-sm">{{ substr(Auth::user()->name, 0, 1) }}</span>
-                    </div>
-                    <div class="ml-3">
-                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ Auth::user()->name }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</div>
-                    </div>
-                </div>
-                
-                <div class="space-y-2">
-                    <a href="{{ route('profile.edit') }}" 
-                       class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                        </svg>
-                        {{ __('Profile') }}
-                    </a>
-                    
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" 
-                                class="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200">
-                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                            </svg>
-                            {{ __('Log Out') }}
+                <!-- Profile Menu (Mobile) -->
+                <x-dropdown align="right" width="48">
+                    <x-slot name="trigger">
+                        <button class="relative inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-300 ease-in-out group focus:outline-none focus:ring-2 focus:ring-sage-green/50">
+                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-deep-slate dark:group-hover:text-gray-100">
+                                {{ substr(Auth::user()->name, 0, 1) }}
+                            </span>
                         </button>
-                    </form>
-                </div>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ Auth::user()->name }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</div>
+                        </div>
+                        <x-dropdown-link :href="route('profile.edit')">
+                            {{ __('Profile') }}
+                        </x-dropdown-link>
+                        <!-- Authentication -->
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">
+                                {{ __('Log Out') }}
+                            </x-dropdown-link>
+                        </form>
+                    </x-slot>
+                </x-dropdown>
             </div>
         </div>
     </div>
 </nav>
+
+<!-- Modern Bottom Navigation (Mobile Only) -->
+<div class="mobile-bottom-nav sm:hidden">
+    <div class="flex items-center justify-around px-2 py-2">
+        <!-- Dashboard Tab -->
+        <a href="{{ route('dashboard') }}" 
+           class="mobile-nav-item {{ request()->routeIs('dashboard') ? 'mobile-nav-active' : 'mobile-nav-inactive' }}"
+           aria-label="{{ __('Dashboard') }}">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
+            </svg>
+            <!-- Active indicator -->
+            @if(request()->routeIs('dashboard'))
+                <div class="absolute bottom-1 w-1.5 h-1.5 bg-sage-green rounded-full"></div>
+            @endif
+        </a>
+        
+        <!-- Applications Tab -->
+        <a href="{{ route('applications.index') }}" 
+           class="mobile-nav-item {{ request()->routeIs('applications.index') ? 'mobile-nav-active' : 'mobile-nav-inactive' }}"
+           aria-label="{{ __('Applications') }}">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <!-- Active indicator -->
+            @if(request()->routeIs('applications.index'))
+                <div class="absolute bottom-1 w-1.5 h-1.5 bg-sage-green rounded-full"></div>
+            @endif
+        </a>
+    </div>
+</div>
+
+<!-- Bottom padding for mobile content to account for bottom navigation -->
+<div class="mobile-content-padding"></div>
