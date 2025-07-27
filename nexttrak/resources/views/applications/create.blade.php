@@ -338,7 +338,7 @@
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sage-green/50 focus:border-sage-green dark:bg-gray-700 dark:text-gray-200">
                                 <option value="Applied" {{ old('status') == 'Applied' ? 'selected' : '' }}>Applied</option>
                                 <option value="Interviewing" {{ old('status') == 'Interviewing' ? 'selected' : '' }}>Interviewing</option>
-                                <option value="Offer" {{ old('status') == 'Offer' ? 'selected' : '' }}>Offer</option>
+                                <option value="Accepted" {{ old('status') == 'Accepted' ? 'selected' : '' }}>Accepted</option>
                                 <option value="Rejected" {{ old('status') == 'Rejected' ? 'selected' : '' }}>Rejected</option>
                                 <option value="Withdrawn" {{ old('status') == 'Withdrawn' ? 'selected' : '' }}>Withdrawn</option>
                             </select>

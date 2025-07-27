@@ -47,8 +47,9 @@
                                         <span
                                             class="text-gray-500">{{ $application->application_date->format('M d, Y') }}</span>
                                         <span
-                                            class="relative inline-flex items-center rounded-full px-2 py-1 font-semibold bg-sage-green/10 text-sage-green">
-                                            <svg class="absolute -left-1 top-1/2 -translate-y-1/2 h-1.5 w-1.5" viewBox="0 0 6 6"
+                                            class="status-badge border {{ $application->status_color['border'] }}"
+                                            style="{{ $application->status_color['bg_style'] }} {{ $application->status_color['text_style'] }}">
+                                            <svg class="absolute left-2 top-1/2 -translate-y-1/2 h-1.5 w-1.5" viewBox="0 0 6 6"
                                                 aria-hidden="true">
                                                 <circle cx="3" cy="3" r="3" fill="currentColor" />
                                             </svg>

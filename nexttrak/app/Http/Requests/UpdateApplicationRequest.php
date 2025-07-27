@@ -28,7 +28,7 @@ class UpdateApplicationRequest extends FormRequest
             'company_name' => 'sometimes|required|string|max:255',
             'job_title' => 'sometimes|nullable|string|max:255',
             'salary' => 'sometimes|nullable|string|max:100',
-            'status' => 'sometimes|required|string|in:Applied,Interviewing,Offered,Rejected,Withdrawn',
+            'status' => 'sometimes|required|string|in:Applied,Interviewing,Accepted,Rejected,Withdrawn',
             'application_date' => 'sometimes|required|date|before_or_equal:today',
             'follow_up_date' => 'sometimes|nullable|date|after_or_equal:application_date',
             'contact_email' => 'sometimes|nullable|email|max:255',
@@ -46,7 +46,7 @@ class UpdateApplicationRequest extends FormRequest
         return [
             'company_name.required' => 'Company name is required.',
             'company_name.max' => 'Company name cannot exceed 255 characters.',
-            'status.in' => 'Status must be one of: Applied, Interviewing, Offered, Rejected, Withdrawn.',
+            'status.in' => 'Status must be one of: Applied, Interviewing, Accepted, Rejected, Withdrawn.',
             'application_date.before_or_equal' => 'Application date cannot be in the future.',
             'follow_up_date.after_or_equal' => 'Follow-up date must be on or after the application date.',
             'contact_email.email' => 'Please enter a valid email address.',

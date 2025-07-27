@@ -75,6 +75,75 @@
     }
 }
 
+/* Custom Status Colors - Enhanced with better dark mode */
+@layer components {
+    /* Status badge container with proper spacing and uniform size */
+    .status-badge {
+        @apply relative inline-flex items-center justify-center rounded-full px-3 py-1.5 font-semibold text-xs;
+        /* Ensure proper spacing for the bullet point */
+        padding-left: 1.75rem;
+        /* Uniform width for all status badges */
+        min-width: 100px;
+        width: 100px;
+    }
+    
+    /* Accepted: Clear, hopeful green for ultimate positive outcome */
+    .status-badge.status-accepted-bg {
+        background-color: #D1FAE5 !important;
+    }
+    .dark .status-badge.status-accepted-bg {
+        background-color: #065F46 !important;
+    }
+    .status-badge.status-accepted-text {
+        color: #065F46 !important;
+    }
+    .dark .status-badge.status-accepted-text {
+        color: #D1FAE5 !important;
+    }
+    
+    /* Interviewing: Warm, muted yellow/gold for active progress */
+    .status-badge.status-interviewing-bg {
+        background-color: #FEF9C3 !important;
+    }
+    .dark .status-badge.status-interviewing-bg {
+        background-color: #92400E !important;
+    }
+    .status-badge.status-interviewing-text {
+        color: #9A3412 !important;
+    }
+    .dark .status-badge.status-interviewing-text {
+        color: #FEF3C7 !important;
+    }
+    
+    /* Rejected/Withdrawn: Muted terracotta/brick for respectful closure */
+    .status-badge.status-rejected-bg {
+        background-color: #FEE2E2 !important;
+    }
+    .dark .status-badge.status-rejected-bg {
+        background-color: #991B1B !important;
+    }
+    .status-badge.status-rejected-text {
+        color: #991B1B !important;
+    }
+    .dark .status-badge.status-rejected-text {
+        color: #FECACA !important;
+    }
+    
+    /* Applied: Simple, soft gray for neutral starting point */
+    .status-badge.status-applied-bg {
+        background-color: #F5F5F4 !important;
+    }
+    .dark .status-badge.status-applied-bg {
+        background-color: #52525B !important;
+    }
+    .status-badge.status-applied-text {
+        color: #3F3F46 !important;
+    }
+    .dark .status-badge.status-applied-text {
+        color: #E4E4E7 !important;
+    }
+}
+
 /* Mobile-specific enhancements */
 @layer base {
     /* Prevent zoom on input focus for better mobile UX */
