@@ -24,14 +24,15 @@ class UpdateApplicationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_name' => 'sometimes|required|string|max:255|trim',
-            'job_title' => 'sometimes|nullable|string|max:255|trim',
-            'salary' => 'sometimes|nullable|string|max:100|trim',
-            'status' => 'sometimes|required|string|in:Applied,Interviewing,Offered,Rejected,Withdrawn|trim',
+            'company_id' => 'sometimes|nullable|exists:companies,id',
+            'company_name' => 'sometimes|required|string|max:255',
+            'job_title' => 'sometimes|nullable|string|max:255',
+            'salary' => 'sometimes|nullable|string|max:100',
+            'status' => 'sometimes|required|string|in:Applied,Interviewing,Offered,Rejected,Withdrawn',
             'application_date' => 'sometimes|required|date|before_or_equal:today',
             'follow_up_date' => 'sometimes|nullable|date|after_or_equal:application_date',
-            'contact_email' => 'sometimes|nullable|email|max:255|trim',
-            'notes' => 'sometimes|nullable|string|max:1000|trim',
+            'contact_email' => 'sometimes|nullable|email|max:255',
+            'notes' => 'sometimes|nullable|string|max:1000',
         ];
     }
 

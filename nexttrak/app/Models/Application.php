@@ -16,6 +16,7 @@ class Application extends Model
      * @var array<string>
      */
     protected $fillable = [
+        'company_id',
         'company_name',
         'job_title',
         'salary',
@@ -51,6 +52,22 @@ class Application extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the company for this application.
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    /**
+     * Get the company name (from relationship or fallback to company_name field).
+     */
+    public function getCompanyNameAttribute(): string
+    {
+        return $this->company?->name ?? $this->attributes['company_name'] ?? 'Unknown Company';
     }
 
     /**

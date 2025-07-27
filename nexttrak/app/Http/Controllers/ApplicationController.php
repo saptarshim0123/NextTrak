@@ -18,7 +18,7 @@ class ApplicationController extends Controller
     {
         $this->authorize('viewAny', Application::class);
         
-        $applications = auth()->user()->applications()->latest()->get();
+        $applications = auth()->user()->applications()->with('company')->latest()->get();
         
         return view('applications.index', [
             'applications' => $applications,
@@ -32,7 +32,10 @@ class ApplicationController extends Controller
     {
         $this->authorize('create', Application::class);
         
-        return view('applications.create');
+        $companies = \App\Models\Company::orderBy('name')->get();
+        $jobRoles = config('job_roles.roles');
+        
+        return view('applications.create', compact('companies', 'jobRoles'));
     }
 
     /**
