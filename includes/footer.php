@@ -23,9 +23,9 @@
         window.addEventListener('scroll', function () {
             const navbar = document.querySelector('.navbar');
             if (window.scrollY > 50) {
-                navbar.style.backgroundColor = 'rgba(255, 255, 255, 0.98)';
+                navbar.classList.add('navbar-scrolled');
             } else {
-                navbar.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                navbar.classList.remove('navbar-scrolled');
             }
         });
     </script>
