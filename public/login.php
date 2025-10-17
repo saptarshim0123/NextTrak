@@ -1,4 +1,4 @@
-<?php include 'header.php';?>
+<?php include '../src/templates/header.php';?>
 
 <body class="bg-light">
     <!-- Navigation -->
@@ -107,4 +107,4 @@
         </div>
     </section>
 
-    <?php include '../includes/footer.php'; ?>
+    <?php include '../src/templates/footer.php'; ?>

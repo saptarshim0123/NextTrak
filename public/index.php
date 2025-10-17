@@ -1,4 +1,4 @@
-<?php include 'includes/header.php';?>
+<?php include '../src/templates/header.php';?>
 
 <body>
     <!-- Navigation -->
@@ -27,10 +27,10 @@
                         <a class="nav-link me-3" href="#contact">Contact</a>
                     </li>
                     <li class="nav-item">
-                        <a href="auth/login.php" class="navbutton btn btn-outline-primary me-2">Login</a>
+                        <a href="login.php" class="navbutton btn btn-outline-primary me-2">Login</a>
                     </li>
                     <li class="nav-item">
-                        <a href="auth/register.php" class="navbutton btn btn-primary">Get Started</a>
+                        <a href="register.php" class="navbutton btn btn-primary">Get Started</a>
                     </li>
                 </ul>
             </div>
@@ -308,4 +308,4 @@
     </section>
 
     <!-- Footer -->
-    <?php include 'includes/footer.php';?>
+    <?php include '../src/templates/footer.php';?>
