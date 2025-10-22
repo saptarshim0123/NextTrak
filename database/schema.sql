@@ -66,3 +66,15 @@ CREATE TABLE job_applications (
     INDEX idx_job_type (job_type),
     INDEX idx_priority (priority)
 );
+
+-- Authentication Tokens Table
+CREATE TABLE auth_tokens (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    selector VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_selector (selector)
+);

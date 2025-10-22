@@ -293,11 +293,11 @@
                         landed better opportunities faster.</p>
 
                     <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
-                        <a href="auth/register.php" class="btn btn-primary px-5">
+                        <a href="register.php" class="btn btn-primary px-5">
                             <i data-lucide="user-plus" class="me-2" style="width: 20px; height: 20px;"></i>
                             Create Free Account
                         </a>
-                        <a href="auth/login.php" class="btn btn-outline-primary px-5">
+                        <a href="login.php" class="btn btn-outline-primary px-5">
                             <i data-lucide="log-in" class="me-2" style="width: 20px; height: 20px;"></i>
                             Sign In
                         </a>
