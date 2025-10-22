@@ -7,10 +7,6 @@
             <a class="navbar-brand" href="../index.php">
                 <i data-lucide="target" class="me-2"></i>NextTrak
             </a>
-
-            <div class="ms-auto">
-                <a href="register.php" class="btn btn-outline-primary">Create Account</a>
-            </div>
         </div>
     </nav>
 
@@ -38,7 +34,7 @@
                             <?php endif; ?>
 
                             <!-- Login Form -->
-                            <form method="POST" action="">
+                            <form method="POST" id="loginForm" action="">
                                 <div class="mb-3">
                                     <label for="email" class="form-label fw-semibold">Email Address</label>
                                     <div class="input-group">
@@ -83,7 +79,7 @@
                             </form>
 
                             <div class="text-center my-4">
-                                <span class="text-muted">Don't have an account?</span>
+                                <span class="text-muted">Don't have an account? Create now!</span>
                             </div>
 
                             <div class="text-center">
