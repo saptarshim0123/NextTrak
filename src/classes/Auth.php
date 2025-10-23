@@ -39,7 +39,7 @@ class Auth
 
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
-        $userId = $this->pdo->create($first_name, $last_name, $email, $password_hash);
+        $userId = $this->user->create($first_name, $last_name, $email, $password_hash);
 
         if ($userId) {
             return true;
