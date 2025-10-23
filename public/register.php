@@ -1,4 +1,40 @@
-<?php include '../src/templates/header.php'; ?>
+<?php 
+
+require_once '../config/database.php';
+require_once '../config/session_config.php';
+require_once '../src/core/functions.php';
+require_once '../src/classes/Auth.php';
+
+$error = '';
+$success = '';
+
+// Process form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Sanitize inputs
+    $first_name = sanitizeInput($_POST['first_name'] ?? '');
+    $last_name = sanitizeInput($_POST['last_name'] ?? '');
+    $email = sanitizeInput($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $confirm_password = $_POST['confirm-password'] ?? '';
+    
+    // Create Auth instance
+    $auth = new Auth($pdo);
+    
+    // Attempt registration
+    $result = $auth->register($first_name, $last_name, $email, $password, $confirm_password);
+    
+    if ($result === true) {
+        // Success! Redirect to login
+        setFlashMessage('Registration successful! Please login.', 'success');
+        redirect('/public/login.php');
+    } else {
+        // Error occurred
+        $error = $result;
+    }
+}
+
+include '../src/templates/header.php'; ?>
+
 <section class="py-5">
     <div class="container-lg">
         <div class="row justify-content-center">

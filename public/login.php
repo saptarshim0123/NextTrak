@@ -1,4 +1,39 @@
-<?php include '../src/templates/header.php';?>
+<?php 
+require_once '../config/database.php';
+require_once '../config/session_config.php';
+require_once '../src/core/functions.php';
+require_once '../src/classes/Auth.php';
+
+$error = '';
+
+// Check for flash messages (from registration success)
+$flash = getFlashMessage();
+
+// Check for timeout message
+if (isset($_GET['timeout']) && $_GET['timeout'] == '1') {
+    $error = 'Your session has expired. Please login again.';
+}
+
+// Process login form
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = sanitizeInput($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    
+    // Create Auth instance
+    $auth = new Auth($pdo);
+    
+    // Attempt login
+    $result = $auth->login($email, $password);
+    
+    if ($result === true) {
+        // Success! Redirect to dashboard
+        redirect('/public/dashboard/index.php');
+    } else {
+        $error = $result;
+    }
+}
+
+include '../src/templates/header.php';?>
 
 <body class="bg-light">
     <!-- Navigation -->
