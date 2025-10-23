@@ -10,25 +10,21 @@ $success = '';
 
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Sanitize inputs
     $first_name = sanitizeInput($_POST['first_name'] ?? '');
     $last_name = sanitizeInput($_POST['last_name'] ?? '');
     $email = sanitizeInput($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm-password'] ?? '';
     
-    // Create Auth instance
     $auth = new Auth($pdo);
     
     // Attempt registration
     $result = $auth->register($first_name, $last_name, $email, $password, $confirm_password);
     
     if ($result === true) {
-        // Success! Redirect to login
         setFlashMessage('Registration successful! Please login.', 'success');
         redirect('/public/login.php');
     } else {
-        // Error occurred
         $error = $result;
     }
 }
@@ -41,7 +37,6 @@ include '../src/templates/header.php'; ?>
             <div class="col-lg-5 col-md-7">
                 <div class="card shadow-lg border-0">
                     <div class="card-body p-5">
-                        <!-- Header -->
                         <div class="text-center mb-4">
                             <div class="feature-icon mx-auto mb-3">
                                 <i data-lucide="party-popper" style="width: 24px; height: 24px; color: white;"></i>
@@ -57,7 +52,6 @@ include '../src/templates/header.php'; ?>
                             </div>
                         <?php endif; ?>
 
-                        <!-- Register Form -->
                         <form method="POST" action="" id="registerForm">
                             <div class="mb-3">
                                 <label for="first_name" class="form-label fw-semibold">First Name</label>
@@ -113,8 +107,8 @@ include '../src/templates/header.php'; ?>
                             <div class="mb-3">
                                 <label for="confirm-password" class="form-label fw-semibold">Confirm Password</label>
                                 <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0" id="password-match-icon">
-                                        <i data-lucide="check-check" class=""></i>
+                                    <span class="input-group-text bg-light border-end-0" id="password-match-icon-span">
+                                        <i data-lucide="lock" class="text-muted" style="width: 18px; height: 18px;"></i>
                                     </span>
                                     <input type="password" class="form-control border-start-0 ps-0"
                                         id="confirm-password" name="confirm-password"
@@ -143,7 +137,6 @@ include '../src/templates/header.php'; ?>
                     </div>
                 </div>
 
-                <!-- Additional Info -->
                 <div class="text-center mt-4">
                     <p class="text-muted small">
                         <i data-lucide="shield-check" class="me-1" style="width: 16px; height: 16px;"></i>

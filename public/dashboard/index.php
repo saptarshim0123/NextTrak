@@ -1,19 +1,11 @@
 <?php
-/**
- * Dashboard Home Page
- * Protected page - requires login
- */
-
-// Load all necessary files
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../config/session_config.php';
 require_once '../../src/core/functions.php';
-// --- ADDED ---
 require_once '../../src/classes/Application.php';
 require_once '../../src/classes/Company.php';
 
-// Ensure $pdo is initialized
 if (!isset($pdo) || !$pdo instanceof PDO) {
     try {
         $pdo = new PDO($dsn, $user, $pass, $options);
@@ -24,13 +16,11 @@ if (!isset($pdo) || !$pdo instanceof PDO) {
 
 requireLogin();
 
-// Get current user data
 $user = getCurrentUser();
 
 $add_app_error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_application') {
-    // Sanitize inputs
     $company_name = sanitizeInput($_POST['company_name'] ?? '');
     $job_title = sanitizeInput($_POST['job_title'] ?? '');
     $job_url = sanitizeInput($_POST['job_url'] ?? '');
@@ -44,19 +34,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $follow_up_email = sanitizeInput($_POST['follow_up_email'] ?? '');
     $interview_date = $_POST['interview_date'] ?? null;
     $notes = sanitizeInput($_POST['notes'] ?? '');
-    
-    // Validation
+
     if (empty($company_name) || empty($job_title)) {
         $add_app_error = "Company name and job title are required.";
     } else {
-        // Get or create company
         $companyObj = new Company($pdo);
         $company_id = $companyObj->getOrCreate($company_name);
         
         if (!$company_id) {
             $add_app_error = "Failed to process company information.";
         } else {
-            // Create application
             $appObj = new Application($pdo);
             
             $data = [
@@ -80,7 +67,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             
             if ($result) {
                 setFlashMessage('Application added successfully!', 'success');
-                // Redirect to the same page to clear POST data and show flash message
                 redirect('/public/dashboard/index.php');
             } else {
                 $add_app_error = "Failed to add application. Please try again.";
@@ -89,7 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Get flash message (if any)
 $flash = getFlashMessage();
 
 $statuses = [];
@@ -98,11 +83,9 @@ try {
     $stmt = $pdo->query("SELECT * FROM application_statuses ORDER BY id");
     $statuses = $stmt->fetchAll();
 } catch (PDOException $e) {
-    $statuses = []; // Fail gracefully
 }
 
-// Later we'll fetch application statistics here
-// For now, we'll use placeholder data
+// Dummy for now
 $stats = [
     'total' => 0,
     'applied' => 0,
