@@ -349,6 +349,15 @@ $applications = $appObj->getByUserId($user['id']);
                     <div class="card-header bg-white border-0 py-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0 fw-semibold">Recent Applications</h5>
+                            <a href="#" class="btn btn-outline-success btn-md me-2">
+                                <i data-lucide="filter" class="me-1" style="width: 16px; height: 16px;"></i>
+                                Filter
+                            </a>
+
+                            <a href="#" class="btn btn-outline-success btn-md me-2">
+                                <i data-lucide="arrow-up-down" class="me-1" style="width: 16px; height: 16px;"></i>
+                                Sort
+                            </a>
                             <a href="#" class="btn btn-primary btn-sm" data-bs-toggle="modal"
                                 data-bs-target="#addApplicationModal">
                                 <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
