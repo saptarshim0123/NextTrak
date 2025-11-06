@@ -19,6 +19,42 @@ $user = getCurrentUser();
 $appObj = new Application($pdo);
 $add_app_error = '';
 
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
+    header('Content-Type: application/json');
+
+    if ($_POST['ajax_action'] === 'update_field') {
+        $app_id = intval($_POST['app_id']);
+        $field = $_POST['field'];
+        $value = $_POST['value'];
+
+        // Build update query based on field
+        $allowed_fields = ['status_id', 'priority', 'job_type', 'notes', 'salary', 'location', 'job_url', 'follow_up_date', 'interview_date'];
+
+        if (in_array($field, $allowed_fields)) {
+            try {
+                $sql = "UPDATE job_applications SET {$field} = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([$value ?: null, $app_id, $user['id']]);
+                echo json_encode(['success' => true]);
+            } catch (PDOException $e) {
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid field']);
+        }
+        exit;
+    }
+
+    if ($_POST['ajax_action'] === 'delete_application') {
+        $app_id = intval($_POST['app_id']);
+        $result = $appObj->delete($app_id, $user['id']);
+        echo json_encode(['success' => $result]);
+        exit;
+    }
+}
+
+// Handle add application
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_application') {
     $company_name = sanitizeInput($_POST['company_name'] ?? '');
     $job_title = sanitizeInput($_POST['job_title'] ?? '');
@@ -39,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } else {
         $companyObj = new Company($pdo);
         $company_id = $companyObj->getOrCreate($company_name);
-        
+
         if (!$company_id) {
             $add_app_error = "Failed to process company information.";
         } else {
@@ -59,9 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 'interview_date' => !empty($interview_date) ? $interview_date : null,
                 'notes' => !empty($notes) ? $notes : null
             ];
-            
+
             $result = $appObj->create($data);
-            
+
             if ($result) {
                 setFlashMessage('Application added successfully!', 'success');
                 redirect('/public/dashboard/index.php');
@@ -81,10 +117,8 @@ try {
     error_log("Error fetching statuses: " . $e->getMessage());
 }
 
-$stats = $appObj->getStatsByUserId($user['id']); // ← Changed to real data
-
-$applications = $appObj->getByUserId($user['id']); // ← Added this line
-
+$stats = $appObj->getStatsByUserId($user['id']);
+$applications = $appObj->getByUserId($user['id']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -93,33 +127,101 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - NextTrak</title>
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap"
         rel="stylesheet">
-
     <link rel="stylesheet" href="../assets/css/style.css">
-
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        .app-row {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .app-row:hover {
+            background-color: #f8f9fa;
+            transform: translateX(4px);
+        }
+
+        .expandable-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+        }
+
+        .expandable-details.show {
+            max-height: 1000px;
+        }
+
+        .detail-card {
+            border-left: 4px solid var(--bs-primary);
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .edit-field {
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            padding: 0.5rem;
+            border-radius: 6px;
+        }
+
+        .edit-field:hover {
+            border-color: var(--bs-primary);
+            background-color: #f8f9fa;
+        }
+
+        .edit-field:focus-within {
+            border-color: var(--bs-primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .save-indicator {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            color: var(--bs-success);
+            font-size: 0.875rem;
+        }
+
+        .save-indicator.show {
+            opacity: 1;
+        }
+
+        .expand-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .expand-icon.rotated {
+            transform: rotate(180deg);
+        }
+
+        .delete-btn {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .expandable-details.show .delete-btn {
+            opacity: 1;
+        }
+    </style>
 </head>
 
 <body class="bg-light">
 
+    <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container-fluid px-4">
             <a class="navbar-brand" href="index.php">
                 <i data-lucide="target" class="me-2"></i>
                 <strong>NextTrak</strong>
             </a>
-
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item me-3">
@@ -136,29 +238,21 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
-                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            role="button" data-bs-toggle="dropdown">
                             <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center me-2"
                                 style="width: 32px; height: 32px;">
                                 <?php echo strtoupper(substr($user['first_name'], 0, 1)); ?>
                             </div>
                             <?php echo htmlspecialchars($user['first_name']); ?>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li>
-                                <a class="dropdown-item" href="profile.php">
-                                    <i data-lucide="user" style="width: 16px; height: 16px;"></i>
-                                    Profile
-                                </a>
-                            </li>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="profile.php"><i data-lucide="user"
+                                        style="width: 16px; height: 16px;"></i> Profile</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
-                            <li>
-                                <a class="dropdown-item text-danger" href="../logout.php">
-                                    <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
-                                    Logout
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item text-danger" href="../logout.php"><i data-lucide="log-out"
+                                        style="width: 16px; height: 16px;"></i> Logout</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -167,7 +261,6 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
     </nav>
 
     <div class="container-fluid px-4 py-4">
-
         <?php if ($flash): ?>
             <div class="alert alert-<?php echo $flash['type']; ?> alert-dismissible fade show" role="alert">
                 <?php echo htmlspecialchars($flash['message']); ?>
@@ -175,6 +268,7 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
             </div>
         <?php endif; ?>
 
+        <!-- Welcome Section -->
         <div class="row mb-4">
             <div class="col-12">
                 <h2 class="fw-bold mb-1">Welcome back, <?php echo htmlspecialchars($user['first_name']); ?>! 👋</h2>
@@ -182,6 +276,7 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
             </div>
         </div>
 
+        <!-- Stats Cards -->
         <div class="row g-3 mb-4">
             <div class="col-md-3">
                 <div class="card border-0 shadow-sm">
@@ -199,7 +294,6 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
                     </div>
                 </div>
             </div>
-
             <div class="col-md-3">
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
@@ -215,7 +309,6 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
                     </div>
                 </div>
             </div>
-
             <div class="col-md-3">
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
@@ -231,7 +324,6 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
                     </div>
                 </div>
             </div>
-
             <div class="col-md-3">
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
@@ -250,20 +342,21 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
             </div>
         </div>
 
-        <!-- Applications List -->
+        <!-- Applications List with Inline Editing -->
         <div class="row">
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-0 py-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0 fw-semibold">Recent Applications</h5>
-                            <a href="#" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addApplicationModal">
+                            <a href="#" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                data-bs-target="#addApplicationModal">
                                 <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
                                 Add Application
                             </a>
                         </div>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-0">
                         <?php if (empty($applications)): ?>
                             <div class="text-center py-5">
                                 <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
@@ -272,66 +365,295 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
                                 </div>
                                 <h5 class="fw-semibold mb-2">No Applications Yet</h5>
                                 <p class="text-muted mb-4">Start tracking your job applications to see them here</p>
-                                <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addApplicationModal">
+                                <a href="#" class="btn btn-primary" data-bs-toggle="modal"
+                                    data-bs-target="#addApplicationModal">
                                     <i data-lucide="plus-circle" class="me-2" style="width: 25px; height: 25px;"></i>
                                     Add Your First Application
                                 </a>
                             </div>
                         <?php else: ?>
                             <div class="table-responsive">
-                                <table class="table table-hover align-middle">
+                                <table class="table mb-0">
                                     <thead class="table-light">
                                         <tr>
+                                            <th style="width: 40px;"></th>
                                             <th>Company</th>
                                             <th>Job Title</th>
                                             <th>Status</th>
                                             <th>Applied Date</th>
-                                            <th>Job Type</th>
                                             <th>Priority</th>
-                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach ($applications as $app): ?>
-                                            <tr>
+                                            <tr class="app-row" data-app-id="<?php echo $app['id']; ?>">
+                                                <td>
+                                                    <i data-lucide="chevron-down" class="expand-icon"
+                                                        style="width: 20px; height: 20px; color: #6c757d;"></i>
+                                                </td>
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="company-icon bg-primary rounded p-2 me-2">
-                                                            <i data-lucide="building" style="width: 16px; height: 16px; color: white;"></i>
+                                                            <i data-lucide="building"
+                                                                style="width: 16px; height: 16px; color: white;"></i>
                                                         </div>
                                                         <strong><?php echo htmlspecialchars($app['company_name']); ?></strong>
                                                     </div>
                                                 </td>
                                                 <td><?php echo htmlspecialchars($app['job_title']); ?></td>
                                                 <td>
-                                                    <span class="status-badge status-<?php echo strtolower($app['status_name']); ?>">
+                                                    <span
+                                                        class="status-badge status-<?php echo strtolower($app['status_name']); ?>">
                                                         <?php echo htmlspecialchars($app['status_name']); ?>
                                                     </span>
                                                 </td>
                                                 <td><?php echo date('M d, Y', strtotime($app['application_date'])); ?></td>
                                                 <td>
-                                                    <span class="badge bg-<?php 
-                                                        echo $app['job_type'] === 'WFH' ? 'success' : 
-                                                            ($app['job_type'] === 'Hybrid' ? 'warning' : 'info'); 
-                                                    ?>">
-                                                        <?php echo htmlspecialchars($app['job_type']); ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-<?php 
-                                                        echo $app['priority'] === 'High' ? 'danger' : 
-                                                            ($app['priority'] === 'Medium' ? 'warning' : 'secondary'); 
-                                                    ?>">
+                                                    <span
+                                                        class="badge bg-<?php echo $app['priority'] === 'High' ? 'danger' : ($app['priority'] === 'Medium' ? 'warning' : 'secondary'); ?>">
                                                         <?php echo htmlspecialchars($app['priority']); ?>
                                                     </span>
                                                 </td>
-                                                <td>
-                                                    <a href="view_application.php?id=<?php echo $app['id']; ?>" class="btn btn-sm btn-outline-primary me-1" title="View">
-                                                        <i data-lucide="eye" style="width: 14px; height: 14px;"></i>
-                                                    </a>
-                                                    <a href="edit_application.php?id=<?php echo $app['id']; ?>" class="btn btn-sm btn-outline-secondary" title="Edit">
-                                                        <i data-lucide="edit" style="width: 14px; height: 14px;"></i>
-                                                    </a>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="6" class="p-0">
+                                                    <div class="expandable-details" id="details-<?php echo $app['id']; ?>">
+                                                        <div class="p-4">
+                                                            <div class="detail-card">
+                                                                <div class="row g-4">
+                                                                    <!-- Status -->
+                                                                    <div class="col-md-6">
+                                                                        <label
+                                                                            class="form-label fw-semibold d-flex align-items-center">
+                                                                            <i data-lucide="flag" class="me-2"
+                                                                                style="width: 16px; height: 16px;"></i>
+                                                                            Status
+                                                                            <span class="save-indicator ms-2"
+                                                                                data-field="status_id-<?php echo $app['id']; ?>">
+                                                                                <i data-lucide="check"
+                                                                                    style="width: 14px; height: 14px;"></i>
+                                                                                Saved
+                                                                            </span>
+                                                                        </label>
+                                                                        <div class="edit-field">
+                                                                            <select class="form-select editable-field"
+                                                                                data-app-id="<?php echo $app['id']; ?>"
+                                                                                data-field="status_id">
+                                                                                <?php foreach ($statuses as $status): ?>
+                                                                                    <option value="<?php echo $status['id']; ?>"
+                                                                                        <?php echo $app['status_id'] == $status['id'] ? 'selected' : ''; ?>>
+                                                                                        <?php echo htmlspecialchars($status['status_name']); ?>
+                                                                                    </option>
+                                                                                <?php endforeach; ?>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- Priority -->
+                                                                    <div class="col-md-6">
+                                                                        <label
+                                                                            class="form-label fw-semibold d-flex align-items-center">
+                                                                            <i data-lucide="zap" class="me-2"
+                                                                                style="width: 16px; height: 16px;"></i>
+                                                                            Priority
+                                                                            <span class="save-indicator ms-2"
+                                                                                data-field="priority-<?php echo $app['id']; ?>">
+                                                                                <i data-lucide="check"
+                                                                                    style="width: 14px; height: 14px;"></i>
+                                                                                Saved
+                                                                            </span>
+                                                                        </label>
+                                                                        <div class="edit-field">
+                                                                            <select class="form-select editable-field"
+                                                                                data-app-id="<?php echo $app['id']; ?>"
+                                                                                data-field="priority">
+                                                                                <option value="Low" <?php echo $app['priority'] == 'Low' ? 'selected' : ''; ?>>Low</option>
+                                                                                <option value="Medium" <?php echo $app['priority'] == 'Medium' ? 'selected' : ''; ?>>Medium</option>
+                                                                                <option value="High" <?php echo $app['priority'] == 'High' ? 'selected' : ''; ?>>High</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- Job Type -->
+                                                                    <div class="col-md-6">
+                                                                        <label
+                                                                            class="form-label fw-semibold d-flex align-items-center">
+                                                                            <i data-lucide="map-pin" class="me-2"
+                                                                                style="width: 16px; height: 16px;"></i>
+                                                                            Job Type
+                                                                            <span class="save-indicator ms-2"
+                                                                                data-field="job_type-<?php echo $app['id']; ?>">
+                                                                                <i data-lucide="check"
+                                                                                    style="width: 14px; height: 14px;"></i>
+                                                                                Saved
+                                                                            </span>
+                                                                        </label>
+                                                                        <div class="edit-field">
+                                                                            <select class="form-select editable-field"
+                                                                                data-app-id="<?php echo $app['id']; ?>"
+                                                                                data-field="job_type">
+                                                                                <option value="WFH" <?php echo $app['job_type'] == 'WFH' ? 'selected' : ''; ?>>Work From Home</option>
+                                                                                <option value="WFO" <?php echo $app['job_type'] == 'WFO' ? 'selected' : ''; ?>>Work From Office</option>
+                                                                                <option value="Hybrid" <?php echo $app['job_type'] == 'Hybrid' ? 'selected' : ''; ?>>Hybrid</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- Salary -->
+                                                                    <div class="col-md-6">
+                                                                        <label
+                                                                            class="form-label fw-semibold d-flex align-items-center">
+                                                                            <i data-lucide="dollar-sign" class="me-2"
+                                                                                style="width: 16px; height: 16px;"></i>
+                                                                            Salary
+                                                                            <span class="save-indicator ms-2"
+                                                                                data-field="salary-<?php echo $app['id']; ?>">
+                                                                                <i data-lucide="check"
+                                                                                    style="width: 14px; height: 14px;"></i>
+                                                                                Saved
+                                                                            </span>
+                                                                        </label>
+                                                                        <div class="edit-field">
+                                                                            <input type="number"
+                                                                                class="form-control editable-field"
+                                                                                data-app-id="<?php echo $app['id']; ?>"
+                                                                                data-field="salary"
+                                                                                value="<?php echo htmlspecialchars($app['salary'] ?? ''); ?>"
+                                                                                placeholder="Annual salary">
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- Location -->
+                                                                    <div class="col-md-6">
+                                                                        <label
+                                                                            class="form-label fw-semibold d-flex align-items-center">
+                                                                            <i data-lucide="map" class="me-2"
+                                                                                style="width: 16px; height: 16px;"></i>
+                                                                            Location
+                                                                            <span class="save-indicator ms-2"
+                                                                                data-field="location-<?php echo $app['id']; ?>">
+                                                                                <i data-lucide="check"
+                                                                                    style="width: 14px; height: 14px;"></i>
+                                                                                Saved
+                                                                            </span>
+                                                                        </label>
+                                                                        <div class="edit-field">
+                                                                            <input type="text"
+                                                                                class="form-control editable-field"
+                                                                                data-app-id="<?php echo $app['id']; ?>"
+                                                                                data-field="location"
+                                                                                value="<?php echo htmlspecialchars($app['location'] ?? ''); ?>"
+                                                                                placeholder="City, State">
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- Job URL -->
+                                                                    <div class="col-md-6">
+                                                                        <label
+                                                                            class="form-label fw-semibold d-flex align-items-center">
+                                                                            <i data-lucide="link" class="me-2"
+                                                                                style="width: 16px; height: 16px;"></i>
+                                                                            Job URL
+                                                                            <span class="save-indicator ms-2"
+                                                                                data-field="job_url-<?php echo $app['id']; ?>">
+                                                                                <i data-lucide="check"
+                                                                                    style="width: 14px; height: 14px;"></i>
+                                                                                Saved
+                                                                            </span>
+                                                                        </label>
+                                                                        <div class="edit-field">
+                                                                            <input type="url"
+                                                                                class="form-control editable-field"
+                                                                                data-app-id="<?php echo $app['id']; ?>"
+                                                                                data-field="job_url"
+                                                                                value="<?php echo htmlspecialchars($app['job_url'] ?? ''); ?>"
+                                                                                placeholder="https://">
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- Follow-up Date -->
+                                                                    <div class="col-md-6">
+                                                                        <label
+                                                                            class="form-label fw-semibold d-flex align-items-center">
+                                                                            <i data-lucide="calendar-days" class="me-2"
+                                                                                style="width: 16px; height: 16px;"></i>
+                                                                            Follow-up Date
+                                                                            <span class="save-indicator ms-2"
+                                                                                data-field="follow_up_date-<?php echo $app['id']; ?>">
+                                                                                <i data-lucide="check"
+                                                                                    style="width: 14px; height: 14px;"></i>
+                                                                                Saved
+                                                                            </span>
+                                                                        </label>
+                                                                        <div class="edit-field">
+                                                                            <input type="date"
+                                                                                class="form-control editable-field"
+                                                                                data-app-id="<?php echo $app['id']; ?>"
+                                                                                data-field="follow_up_date"
+                                                                                value="<?php echo $app['follow_up_date'] ?? ''; ?>">
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- Interview Date -->
+                                                                    <div class="col-md-6">
+                                                                        <label
+                                                                            class="form-label fw-semibold d-flex align-items-center">
+                                                                            <i data-lucide="video" class="me-2"
+                                                                                style="width: 16px; height: 16px;"></i>
+                                                                            Interview Date/Time
+                                                                            <span class="save-indicator ms-2"
+                                                                                data-field="interview_date-<?php echo $app['id']; ?>">
+                                                                                <i data-lucide="check"
+                                                                                    style="width: 14px; height: 14px;"></i>
+                                                                                Saved
+                                                                            </span>
+                                                                        </label>
+                                                                        <div class="edit-field">
+                                                                            <input type="datetime-local"
+                                                                                class="form-control editable-field"
+                                                                                data-app-id="<?php echo $app['id']; ?>"
+                                                                                data-field="interview_date"
+                                                                                value="<?php echo $app['interview_date'] ? date('Y-m-d\TH:i', strtotime($app['interview_date'])) : ''; ?>">
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- Notes -->
+                                                                    <div class="col-12">
+                                                                        <label
+                                                                            class="form-label fw-semibold d-flex align-items-center">
+                                                                            <i data-lucide="file-text" class="me-2"
+                                                                                style="width: 16px; height: 16px;"></i>
+                                                                            Notes
+                                                                            <span class="save-indicator ms-2"
+                                                                                data-field="notes-<?php echo $app['id']; ?>">
+                                                                                <i data-lucide="check"
+                                                                                    style="width: 14px; height: 14px;"></i>
+                                                                                Saved
+                                                                            </span>
+                                                                        </label>
+                                                                        <div class="edit-field">
+                                                                            <textarea class="form-control editable-field"
+                                                                                data-app-id="<?php echo $app['id']; ?>"
+                                                                                data-field="notes" rows="3"
+                                                                                placeholder="Add notes about this application..."><?php echo htmlspecialchars($app['notes'] ?? ''); ?></textarea>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Delete Button -->
+                                                                <div class="mt-4 text-end">
+                                                                    <button class="btn btn-outline-danger delete-btn"
+                                                                        data-app-id="<?php echo $app['id']; ?>"
+                                                                        data-company="<?php echo htmlspecialchars($app['company_name']); ?>"
+                                                                        data-title="<?php echo htmlspecialchars($app['job_title']); ?>">
+                                                                        <i data-lucide="trash-2"
+                                                                            style="width: 16px; height: 16px;"></i>
+                                                                        Delete Application
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -343,19 +665,17 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
                 </div>
             </div>
         </div>
-
     </div>
-    
+
     <!-- Add Application Modal -->
-    <div class="modal fade" id="addApplicationModal" tabindex="-1" aria-labelledby="addApplicationModalLabel" aria-hidden="true">
+    <div class="modal fade" id="addApplicationModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold" id="addApplicationModalLabel">Add New Application</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title fw-bold">Add New Application</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    
                     <?php if (!empty($add_app_error)): ?>
                         <div class="alert alert-danger alert-dismissible fade show">
                             <?php echo htmlspecialchars($add_app_error); ?>
@@ -365,54 +685,40 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
 
                     <form method="POST" action="index.php" id="addAppForm">
                         <input type="hidden" name="action" value="add_application">
-
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="company_name" class="form-label fw-semibold">
                                     Company Name <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" class="form-control" id="company_name" name="company_name" 
-                                    placeholder="e.g., Google, Microsoft" 
-                                    value="<?php echo htmlspecialchars($_POST['company_name'] ?? ''); ?>" 
-                                    required>
-                                <small class="text-muted">If company doesn't exist, it will be created</small>
+                                <input type="text" class="form-control" id="company_name" name="company_name"
+                                    placeholder="e.g., Google, Microsoft" required>
                             </div>
-                            
                             <div class="col-md-6">
                                 <label for="job_title" class="form-label fw-semibold">
                                     Job Title <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" class="form-control" id="job_title" name="job_title" 
-                                    placeholder="e.g., Frontend Developer" 
-                                    value="<?php echo htmlspecialchars($_POST['job_title'] ?? ''); ?>" 
-                                    required>
+                                <input type="text" class="form-control" id="job_title" name="job_title"
+                                    placeholder="e.g., Frontend Developer" required>
                             </div>
                         </div>
-
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="job_url" class="form-label fw-semibold">Job Posting URL</label>
-                                <input type="url" class="form-control" id="job_url" name="job_url" 
-                                    placeholder="https://..." 
-                                    value="<?php echo htmlspecialchars($_POST['job_url'] ?? ''); ?>">
+                                <input type="url" class="form-control" id="job_url" name="job_url"
+                                    placeholder="https://...">
                             </div>
-                            
                             <div class="col-md-6">
                                 <label for="salary" class="form-label fw-semibold">Salary (Annual)</label>
-                                <input type="number" class="form-control" id="salary" name="salary" 
-                                    placeholder="e.g., 80000" 
-                                    value="<?php echo htmlspecialchars($_POST['salary'] ?? ''); ?>">
+                                <input type="number" class="form-control" id="salary" name="salary"
+                                    placeholder="e.g., 80000">
                             </div>
                         </div>
-
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="location" class="form-label fw-semibold">Location</label>
-                                <input type="text" class="form-control" id="location" name="location" 
-                                    placeholder="e.g., Remote, New York, NY" 
-                                    value="<?php echo htmlspecialchars($_POST['location'] ?? ''); ?>">
+                                <input type="text" class="form-control" id="location" name="location"
+                                    placeholder="e.g., Remote, New York">
                             </div>
-                            
                             <div class="col-md-6">
                                 <label for="job_type" class="form-label fw-semibold">Job Type</label>
                                 <select class="form-select" id="job_type" name="job_type">
@@ -422,20 +728,17 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
                                 </select>
                             </div>
                         </div>
-
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="status_id" class="form-label fw-semibold">Application Status</label>
                                 <select class="form-select" id="status_id" name="status_id">
                                     <?php foreach ($statuses as $status): ?>
-                                        <option value="<?php echo $status['id']; ?>" 
-                                            <?php echo (($_POST['status_id'] ?? 1) == $status['id']) ? 'selected' : ''; ?>>
+                                        <option value="<?php echo $status['id']; ?>">
                                             <?php echo htmlspecialchars($status['status_name']); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            
                             <div class="col-md-6">
                                 <label for="priority" class="form-label fw-semibold">Priority</label>
                                 <select class="form-select" id="priority" name="priority">
@@ -445,40 +748,32 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
                                 </select>
                             </div>
                         </div>
-
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label for="application_date" class="form-label fw-semibold">Application Date</label>
-                                <input type="date" class="form-control" id="application_date" name="application_date" 
-                                    value="<?php echo $_POST['application_date'] ?? date('Y-m-d'); ?>">
+                                <input type="date" class="form-control" id="application_date" name="application_date"
+                                    value="<?php echo date('Y-m-d'); ?>">
                             </div>
-                            
                             <div class="col-md-4">
                                 <label for="follow_up_date" class="form-label fw-semibold">Follow-up Date</label>
-                                <input type="date" class="form-control" id="follow_up_date" name="follow_up_date" 
-                                    value="<?php echo $_POST['follow_up_date'] ?? ''; ?>">
+                                <input type="date" class="form-control" id="follow_up_date" name="follow_up_date">
                             </div>
-                            
                             <div class="col-md-4">
                                 <label for="interview_date" class="form-label fw-semibold">Interview Date/Time</label>
-                                <input type="datetime-local" class="form-control" id="interview_date" name="interview_date" 
-                                    value="<?php echo $_POST['interview_date'] ?? ''; ?>">
+                                <input type="datetime-local" class="form-control" id="interview_date"
+                                    name="interview_date">
                             </div>
                         </div>
-
                         <div class="mb-3">
-                            <label for="follow_up_email" class="form-label fw-semibold">Follow-up Contact Email</label>
-                            <input type="email" class="form-control" id="follow_up_email" name="follow_up_email" 
-                                placeholder="recruiter@company.com" 
-                                value="<?php echo htmlspecialchars($_POST['follow_up_email'] ?? ''); ?>">
+                            <label for="follow_up_email" class="form-label fw-semibold">Follow-up Email</label>
+                            <input type="email" class="form-control" id="follow_up_email" name="follow_up_email"
+                                placeholder="recruiter@company.com">
                         </div>
-
                         <div class="mb-3">
                             <label for="notes" class="form-label fw-semibold">Notes</label>
-                            <textarea class="form-control" id="notes" name="notes" rows="3" 
-                                    placeholder="Add any additional notes..."><?php echo htmlspecialchars($_POST['notes'] ?? ''); ?></textarea>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"
+                                placeholder="Add notes..."></textarea>
                         </div>
-
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -492,20 +787,111 @@ $applications = $appObj->getByUserId($user['id']); // ← Added this line
         </div>
     </div>
 
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
         lucide.createIcons();
-    </script>
-    
-    <script>
+
+        // Toggle expandable details
+        document.querySelectorAll('.app-row').forEach(row => {
+            row.addEventListener('click', function (e) {
+                if (e.target.closest('.editable-field') || e.target.closest('.delete-btn')) return;
+
+                const appId = this.dataset.appId;
+                const details = document.getElementById(`details-${appId}`);
+                const icon = this.querySelector('.expand-icon');
+
+                details.classList.toggle('show');
+                icon.classList.toggle('rotated');
+            });
+        });
+
+        // Auto-save system
+        let saveTimeout;
+        document.querySelectorAll('.editable-field').forEach(field => {
+            field.addEventListener('change', function () {
+                clearTimeout(saveTimeout);
+                const element = this;
+                const appId = this.dataset.appId;
+                const fieldName = this.dataset.field;
+                const value = this.value;
+
+                saveTimeout = setTimeout(() => {
+                    fetch('index.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `ajax_action=update_field&app_id=${appId}&field=${fieldName}&value=${encodeURIComponent(value)}`
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const indicator = document.querySelector(`[data-field="${fieldName}-${appId}"]`);
+                                indicator.classList.add('show');
+                                lucide.createIcons();
+                                setTimeout(() => indicator.classList.remove('show'), 2000);
+
+                                const mainRow = document.querySelector(`.app-row[data-app-id="${appId}"]`);
+                                if (!mainRow) return;
+
+                                if (fieldName === 'status_id') {
+                                    const selectedText = element.options[element.selectedIndex].text;
+                                    const statusBadge = mainRow.querySelector('.status-badge');
+
+                                    if (statusBadge) {
+                                        statusBadge.textContent = selectedText;
+                                        const newStatusClass = 'status-' + selectedText.toLowerCase().replace(' ', '-');
+                                        statusBadge.className = 'status-badge';
+                                        statusBadge.classList.add(newStatusClass);
+                                    }
+                                }
+
+                                if (fieldName === 'priority') {
+                                    const priorityBadge = mainRow.querySelector('td:nth-child(6) .badge');
+                                    if (priorityBadge) {
+                                        priorityBadge.textContent = value;
+                                        priorityBadge.classList.remove('bg-danger', 'bg-warning', 'bg-secondary');
+                                        let newClass = 'bg-secondary';
+                                        if (value === 'High') newClass = 'bg-danger';
+                                        else if (value === 'Medium') newClass = 'bg-warning';
+                                        priorityBadge.classList.add(newClass);
+                                    }
+                                }
+                            }
+                        });
+                }, 500);
+            });
+        });
+
+        // Delete application
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const appId = this.dataset.appId;
+                const company = this.dataset.company;
+                const title = this.dataset.title;
+
+                if (confirm(`Are you sure you want to delete the application for ${title} at ${company}?`)) {
+                    fetch('index.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `ajax_action=delete_application&app_id=${appId}`
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                location.reload();
+                            }
+                        });
+                }
+            });
+        });
+
         <?php if (!empty($add_app_error)): ?>
-            var addModalElement = document.getElementById('addApplicationModal');
-            if (addModalElement) {
-                var addModal = new bootstrap.Modal(addModalElement, {});
-                addModal.show();
-            }
+            var addModal = new bootstrap.Modal(document.getElementById('addApplicationModal'));
+            addModal.show();
         <?php endif; ?>
     </script>
 </body>
