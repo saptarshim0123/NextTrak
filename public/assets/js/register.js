@@ -6,9 +6,6 @@ document.addEventListener("DOMContentLoaded", function() {
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirm-password');
     const passwordMatchMessage = document.getElementById('password-match-message');
-    
-    // Select the icon <i> tag directly, not its parent <span>
-    // Note: I updated the <span> ID in the HTML to 'password-match-icon-span' to be clearer
     const passwordMatchIcon = document.querySelector('#password-match-icon-span i');
 
     function validatePassword() {

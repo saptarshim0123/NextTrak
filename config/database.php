@@ -10,7 +10,6 @@ try {
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        // Disable emulated prepared statements (better security)
         PDO::ATTR_EMULATE_PREPARES => false
     ];
 

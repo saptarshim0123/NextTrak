@@ -1,21 +1,12 @@
 :root {
-    /* Primary */
     --bs-primary: #4F46E5;
     --bs-primary-rgb: 79, 70, 229;
-
-    /* Success / Progress */
     --bs-success: #10B981;
     --bs-success-rgb: 16, 185, 129;
-
-    /* Neutral Backgrounds */
     --bs-light: #F9FAFB;
     --bs-body-bg: #FFFFFF;
     --bs-body-color: #111827;
-
-    /* Accent */
     --bs-accent: #6366F1;
-
-    /* Borders */
     --bs-border-color: #E5E7EB;
 }
 
@@ -206,6 +197,11 @@ h6 {
 
 .status-offer {
     background: var(--bs-success);
+    color: white;
+}
+
+.status-rejected {
+    background: #ff5050;
     color: white;
 }
 

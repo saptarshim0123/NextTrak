@@ -15,9 +15,8 @@ if (!isset($pdo) || !$pdo instanceof PDO) {
 }
 
 requireLogin();
-
 $user = getCurrentUser();
-
+$appObj = new Application($pdo);
 $add_app_error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_application') {
@@ -44,8 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         if (!$company_id) {
             $add_app_error = "Failed to process company information.";
         } else {
-            $appObj = new Application($pdo);
-            
             $data = [
                 'user_id' => $user['id'],
                 'company_id' => $company_id,
@@ -76,23 +73,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 $flash = getFlashMessage();
-
 $statuses = [];
 try {
-
     $stmt = $pdo->query("SELECT * FROM application_statuses ORDER BY id");
     $statuses = $stmt->fetchAll();
 } catch (PDOException $e) {
+    error_log("Error fetching statuses: " . $e->getMessage());
 }
 
-// Dummy for now
-$stats = [
-    'total' => 0,
-    'applied' => 0,
-    'interview' => 0,
-    'offer' => 0,
-    'rejected' => 0
-];
+$stats = $appObj->getStatsByUserId($user['id']); // ← Changed to real data
+
+$applications = $appObj->getByUserId($user['id']); // ← Added this line
 
 ?>
 <!DOCTYPE html>
@@ -259,6 +250,7 @@ $stats = [
             </div>
         </div>
 
+        <!-- Applications List -->
         <div class="row">
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
@@ -272,18 +264,81 @@ $stats = [
                         </div>
                     </div>
                     <div class="card-body">
-                        <div class="text-center py-5">
-                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                                style="width: 80px; height: 80px;">
-                                <i data-lucide="inbox" style="width: 40px; height: 40px; color: #6c757d;"></i>
+                        <?php if (empty($applications)): ?>
+                            <div class="text-center py-5">
+                                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                                    style="width: 80px; height: 80px;">
+                                    <i data-lucide="inbox" style="width: 40px; height: 40px; color: #6c757d;"></i>
+                                </div>
+                                <h5 class="fw-semibold mb-2">No Applications Yet</h5>
+                                <p class="text-muted mb-4">Start tracking your job applications to see them here</p>
+                                <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addApplicationModal">
+                                    <i data-lucide="plus-circle" class="me-2" style="width: 25px; height: 25px;"></i>
+                                    Add Your First Application
+                                </a>
                             </div>
-                            <h5 class="fw-semibold mb-2">No Applications Yet</h5>
-                            <p class="text-muted mb-4">Start tracking your job applications to see them here</p>
-                            <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addApplicationModal">
-                                <i data-lucide="plus-circle" class="me-2" style="width: 25px; height: 25px;"></i>
-                                Add Your First Application
-                            </a>
-                        </div>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Company</th>
+                                            <th>Job Title</th>
+                                            <th>Status</th>
+                                            <th>Applied Date</th>
+                                            <th>Job Type</th>
+                                            <th>Priority</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($applications as $app): ?>
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="company-icon bg-primary rounded p-2 me-2">
+                                                            <i data-lucide="building" style="width: 16px; height: 16px; color: white;"></i>
+                                                        </div>
+                                                        <strong><?php echo htmlspecialchars($app['company_name']); ?></strong>
+                                                    </div>
+                                                </td>
+                                                <td><?php echo htmlspecialchars($app['job_title']); ?></td>
+                                                <td>
+                                                    <span class="status-badge status-<?php echo strtolower($app['status_name']); ?>">
+                                                        <?php echo htmlspecialchars($app['status_name']); ?>
+                                                    </span>
+                                                </td>
+                                                <td><?php echo date('M d, Y', strtotime($app['application_date'])); ?></td>
+                                                <td>
+                                                    <span class="badge bg-<?php 
+                                                        echo $app['job_type'] === 'WFH' ? 'success' : 
+                                                            ($app['job_type'] === 'Hybrid' ? 'warning' : 'info'); 
+                                                    ?>">
+                                                        <?php echo htmlspecialchars($app['job_type']); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-<?php 
+                                                        echo $app['priority'] === 'High' ? 'danger' : 
+                                                            ($app['priority'] === 'Medium' ? 'warning' : 'secondary'); 
+                                                    ?>">
+                                                        <?php echo htmlspecialchars($app['priority']); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <a href="view_application.php?id=<?php echo $app['id']; ?>" class="btn btn-sm btn-outline-primary me-1" title="View">
+                                                        <i data-lucide="eye" style="width: 14px; height: 14px;"></i>
+                                                    </a>
+                                                    <a href="edit_application.php?id=<?php echo $app['id']; ?>" class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                        <i data-lucide="edit" style="width: 14px; height: 14px;"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -291,6 +346,7 @@ $stats = [
 
     </div>
     
+    <!-- Add Application Modal -->
     <div class="modal fade" id="addApplicationModal" tabindex="-1" aria-labelledby="addApplicationModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
@@ -360,15 +416,9 @@ $stats = [
                             <div class="col-md-6">
                                 <label for="job_type" class="form-label fw-semibold">Job Type</label>
                                 <select class="form-select" id="job_type" name="job_type">
-                                    <option value="WFH" <?php echo (($_POST['job_type'] ?? '') === 'WFH') ? 'selected' : ''; ?>>
-                                        Work From Home
-                                    </option>
-                                    <option value="WFO" <?php echo (($_POST['job_type'] ?? 'WFO') === 'WFO') ? 'selected' : ''; ?>>
-                                        Work From Office
-                                    </option>
-                                    <option value="Hybrid" <?php echo (($_POST['job_type'] ?? '') === 'Hybrid') ? 'selected' : ''; ?>>
-                                        Hybrid
-                                    </option>
+                                    <option value="WFH">Work From Home</option>
+                                    <option value="WFO" selected>Work From Office</option>
+                                    <option value="Hybrid">Hybrid</option>
                                 </select>
                             </div>
                         </div>
@@ -389,15 +439,9 @@ $stats = [
                             <div class="col-md-6">
                                 <label for="priority" class="form-label fw-semibold">Priority</label>
                                 <select class="form-select" id="priority" name="priority">
-                                    <option value="Low" <?php echo (($_POST['priority'] ?? '') === 'Low') ? 'selected' : ''; ?>>
-                                        Low
-                                    </option>
-                                    <option value="Medium" <?php echo (($_POST['priority'] ?? 'Medium') === 'Medium') ? 'selected' : ''; ?>>
-                                        Medium
-                                    </option>
-                                    <option value="High" <?php echo (($_POST['priority'] ?? '') === 'High') ? 'selected' : ''; ?>>
-                                        High
-                                    </option>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium" selected>Medium</option>
+                                    <option value="High">High</option>
                                 </select>
                             </div>
                         </div>
@@ -429,7 +473,8 @@ $stats = [
                                 value="<?php echo htmlspecialchars($_POST['follow_up_email'] ?? ''); ?>">
                         </div>
 
-                        <div class="mb-3"> <label for="notes" class="form-label fw-semibold">Notes</label>
+                        <div class="mb-3">
+                            <label for="notes" class="form-label fw-semibold">Notes</label>
                             <textarea class="form-control" id="notes" name="notes" rows="3" 
                                     placeholder="Add any additional notes..."><?php echo htmlspecialchars($_POST['notes'] ?? ''); ?></textarea>
                         </div>

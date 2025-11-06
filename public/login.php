@@ -19,14 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = sanitizeInput($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     
-    // Create Auth instance
     $auth = new Auth($pdo);
     
-    // Attempt login
     $result = $auth->login($email, $password);
     
     if ($result === true) {
-        // Success! Redirect to dashboard
         redirect('/public/dashboard/index.php');
     } else {
         $error = $result;
@@ -39,7 +36,7 @@ include '../src/templates/header.php';?>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container-lg">
-            <a class="navbar-brand" href="../index.php">
+            <a class="navbar-brand" href="./index.php">
                 <i data-lucide="target" class="me-2"></i>NextTrak
             </a>
         </div>
@@ -126,7 +123,6 @@ include '../src/templates/header.php';?>
                         </div>
                     </div>
 
-                    <!-- Additional Info -->
                     <div class="text-center mt-4">
                         <p class="text-muted small">
                             <i data-lucide="shield-check" class="me-1" style="width: 16px; height: 16px;"></i>

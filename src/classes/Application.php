@@ -52,7 +52,6 @@ class Application {
             
             $params = [$user_id];
             
-            // Apply filters
             if (!empty($filters['status_id'])) {
                 $sql .= " AND ja.status_id = ?";
                 $params[] = $filters['status_id'];
