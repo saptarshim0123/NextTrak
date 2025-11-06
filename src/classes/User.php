@@ -51,7 +51,6 @@ class User {
             return false;
         }
     }
-    // --- ADD THIS METHOD ---
     public function updateDetails($id, $first_name, $last_name, $email) {
         try {
             $sql = "UPDATE users 
@@ -65,7 +64,6 @@ class User {
         }
     }
 
-    // --- ADD THIS METHOD ---
     public function updatePassword($id, $password_hash) {
         try {
             $sql = "UPDATE users SET password_hash = ? WHERE id = ?";

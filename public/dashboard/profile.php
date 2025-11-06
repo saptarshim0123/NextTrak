@@ -96,12 +96,17 @@ $flash = getFlashMessage();
 </head>
 
 <body class="bg-light">
-
+        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container-fluid px-4">
+            <a class="navbar-brand" href="index.php">
                 <i data-lucide="target" class="me-2"></i>
                 <strong>NextTrak</strong>
             </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
             </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item me-3">
                         <a class="nav-link" href="index.php">
                             <i data-lucide="home" style="width: 25px; height: 25px;"></i>
@@ -124,7 +129,7 @@ $flash = getFlashMessage();
                             <?php echo htmlspecialchars($user['first_name']); ?>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item active" href="profile.php"><i data-lucide="user"
+                            <li><a class="dropdown-item" href="profile.php"><i data-lucide="user"
                                         style="width: 16px; height: 16px;"></i> Profile</a></li>
                             <li>
                                 <hr class="dropdown-divider">
@@ -137,7 +142,6 @@ $flash = getFlashMessage();
             </div>
         </div>
     </nav>
-
     <div class="container-fluid px-4 py-4">
         <div class="row mb-4">
             <div class="col-12">
@@ -192,8 +196,7 @@ $flash = getFlashMessage();
                             </div>
                             <div class="mb-3">
                                 <label for="email" class="form-label fw-semibold">Email Address</label>
-                                <input type="email" class="form-control" id="email" name="email" 
-                                       value="<?php echo htmlspecialchars($user['email']); ?>" required>
+                                <input type="email" class="form-control" id="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" required>
                             </div>
                             <button type="submit" class="btn btn-primary">
                                 <i data-lucide="save" style="width: 18px; height: 18px;"></i>
@@ -217,9 +220,9 @@ $flash = getFlashMessage();
                             <div class="mb-3">
                                 <label for="new_password" class="form-label fw-semibold">New Password</label>
                                 <input type="password" class="form-control" id="new_password" name="new_password" 
-                                       pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-                                       title="Must contain at least one number, one uppercase and lowercase letter, and at least 8 or more characters"
-                                       required>
+                                    pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                                    title="Must contain at least one number, one uppercase and lowercase letter, and at least 8 or more characters"
+                                    required>
                                 <div class="form-text">
                                     Must be 8+ characters and include one uppercase, one lowercase, and one number.
                                 </div>
