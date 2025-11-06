@@ -51,4 +51,29 @@ class User {
             return false;
         }
     }
+    // --- ADD THIS METHOD ---
+    public function updateDetails($id, $first_name, $last_name, $email) {
+        try {
+            $sql = "UPDATE users 
+                    SET first_name = ?, last_name = ?, email = ? 
+                    WHERE id = ?";
+            $stmt = $this->pdo->prepare($sql);
+            return $stmt->execute([$first_name, $last_name, $email, $id]);
+        } catch (PDOException $e) {
+            error_log("User::updateDetails Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // --- ADD THIS METHOD ---
+    public function updatePassword($id, $password_hash) {
+        try {
+            $sql = "UPDATE users SET password_hash = ? WHERE id = ?";
+            $stmt = $this->pdo->prepare($sql);
+            return $stmt->execute([$password_hash, $id]);
+        } catch (PDOException $e) {
+            error_log("User::updatePassword Error: " . $e->getMessage());
+            return false;
+        }
+    }
 }
