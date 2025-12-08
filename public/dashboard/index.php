@@ -6,14 +6,6 @@ require_once '../../src/core/functions.php';
 require_once '../../src/classes/Application.php';
 require_once '../../src/classes/Company.php';
 
-if (!isset($pdo) || !$pdo instanceof PDO) {
-    try {
-        $pdo = new PDO($dsn, $user, $pass, $options);
-    } catch (PDOException $e) {
-        die('Database connection failed: ' . $e->getMessage());
-    }
-}
-
 requireLogin();
 $user = getCurrentUser();
 $appObj = new Application($pdo);
@@ -74,7 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $add_app_error = "Company name and job title are required.";
     } else {
         $companyObj = new Company($pdo);
-        $company_id = $companyObj->getOrCreate($company_name);
+        $company_website = sanitizeInput($_POST['company_website'] ?? '');
+        $company_id = $companyObj->getOrCreate($company_name, $company_website);
 
         if (!$company_id) {
             $add_app_error = "Failed to process company information.";
@@ -586,14 +579,12 @@ $applications = $appObj->getByUserId($user['id'], $filters);
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <?php
-                                                        $logoUrl = !empty($app['company_website']) 
-                                                            ? 'https://logo.clearbit.com/' . preg_replace('/^www\./i', '', $app['company_website'])
-                                                            : null;
+                                                        $logoUrl = getCompanyLogo($app['company_website'] ?? '');
                                                         $initials = strtoupper(substr($app['company_name'], 0, 2));
                                                         ?>
                                                         <div class="company-icon-wrapper me-2">
                                                             <?php if ($logoUrl): ?>
-                                                                <img src="<?php echo $logoUrl; ?>" 
+                                                                <img src="<?php echo htmlspecialchars($logoUrl); ?>" 
                                                                     alt="<?php echo htmlspecialchars($app['company_name']); ?>"
                                                                     class="company-logo-main"
                                                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">

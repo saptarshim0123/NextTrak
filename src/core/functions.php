@@ -137,3 +137,52 @@ function generateRandomString($length = 32)
 {
     return bin2hex(random_bytes($length / 2));
 }
+
+/**
+ * Get company logo URL using proxy to bypass browser tracking prevention
+ * Properly extracts domain from URL and constructs proxy URL
+ */
+function getCompanyLogo($website)
+{
+    if (empty($website)) {
+        return null;
+    }
+
+    // Trim whitespace
+    $website = trim($website);
+    
+    // 1. Ensure a scheme/protocol is present for parse_url to work correctly
+    $url = $website;
+    if (strpos($url, '://') === false) {
+        $url = 'http://' . $url;
+    }
+
+    // 2. Extract the host/domain name
+    $host = parse_url($url, PHP_URL_HOST);
+
+    if (empty($host)) {
+        // If parse_url fails, try to extract domain manually
+        // Remove protocol if present
+        $host = preg_replace('#^https?://#i', '', $website);
+        // Remove path if present
+        $host = preg_replace('#[/?#].*$#', '', $host);
+        // Remove port if present
+        $host = preg_replace('#:\d+$#', '', $host);
+        
+        if (empty($host)) {
+            return null; // Could not extract a valid domain
+        }
+    }
+
+    // 3. Remove optional 'www.' prefix and convert to lowercase
+    $domain = strtolower(preg_replace('/^www\./i', '', $host));
+    
+    // 4. Basic domain validation - just check it's not empty and has at least one dot
+    if (empty($domain) || strpos($domain, '.') === false) {
+        return null; // Invalid domain format
+    }
+
+    // Use Google Favicon API - more reliable and doesn't have tracking prevention issues
+    // Size 128 gives us a good quality logo/favicon
+    return "https://www.google.com/s2/favicons?domain={$domain}&sz=128";
+}

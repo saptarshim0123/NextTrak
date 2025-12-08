@@ -3,7 +3,7 @@ require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../config/session_config.php';
 require_once '../../src/core/functions.php';
-require_once '../../src/classes/User.php'; // We'll need to update this file
+require_once '../../src/classes/User.php';
 
 requireLogin();
 $user = getCurrentUser();
@@ -114,7 +114,7 @@ $flash = getFlashMessage();
                         </a>
                     </li>
                     <li class="nav-item me-3">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#addApplicationModal">
+                        <a class="nav-link" href="index.php">
                             <i data-lucide="plus-circle" style="width: 25px; height: 25px;"></i>
                             Add Application
                         </a>
@@ -241,27 +241,6 @@ $flash = getFlashMessage();
             </div>
         </div>
     </div>
-
-    <div class="modal fade" id="addApplicationModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold">Add New Application</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Add application form goes here...</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" form="addAppForm" class="btn btn-primary">
-                        Save Application
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>

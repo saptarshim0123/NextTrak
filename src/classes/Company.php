@@ -75,8 +75,23 @@ class Company {
     public function getOrCreate($name, $website = null) {
         $existing = $this->getByName($name);
         if ($existing) {
+            // Update website if company exists but doesn't have one, and a website is provided
+            if (empty($existing['website']) && !empty($website)) {
+                $this->updateWebsite($existing['id'], $website);
+            }
             return $existing['id'];
         }
         return $this->create($name, $website);
+    }
+    
+    public function updateWebsite($id, $website) {
+        try {
+            $sql = "UPDATE companies SET website = ? WHERE id = ?";
+            $stmt = $this->pdo->prepare($sql);
+            return $stmt->execute([$website, $id]);
+        } catch (PDOException $e) {
+            error_log("Company::updateWebsite Error: " . $e->getMessage());
+            return false;
+        }
     }
 }
