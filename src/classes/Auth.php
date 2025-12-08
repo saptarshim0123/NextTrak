@@ -44,7 +44,7 @@ class Auth
         if ($userId) {
             return true;
         } else {
-            return "An error occured. Please retry!";
+            return "An error occurred. Please retry!";
         }
     }
 
@@ -67,7 +67,13 @@ class Auth
             $_SESSION['last_activity'] = time();
 
             if ($remember) {
+                // Set flag that this session uses remember me
+                $_SESSION['remember_me_active'] = true;
                 $this->rememberUser($userData['id']);
+            } else {
+                // Create session token for non-remember-me sessions
+                $_SESSION['session_token'] = bin2hex(random_bytes(32));
+                setcookie('session_token', $_SESSION['session_token'], 0, '/');
             }
 
             return true;
@@ -76,7 +82,8 @@ class Auth
         }
     }
 
-    public function loginWithCookie() {
+    public function loginWithCookie()
+    {
         // 1. Check if cookie exists
         if (!isset($_COOKIE['remember_me'])) {
             return false;
@@ -85,9 +92,11 @@ class Auth
         // 2. Extract Selector and Validator
         $parts = explode(':', $_COOKIE['remember_me']);
         if (count($parts) !== 2) {
+            // Malformed cookie - delete it
+            setcookie('remember_me', '', time() - 3600, '/', '', false, true);
             return false;
         }
-        
+
         $selector = $parts[0];
         $validator = $parts[1];
 
@@ -98,21 +107,31 @@ class Auth
         $tokenData = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$tokenData) {
+            // Token not found or expired - delete cookie
+            setcookie('remember_me', '', time() - 3600, '/', '', false, true);
             return false;
         }
 
         // 4. Verify the Validator (Hash comparison)
         if (password_verify($validator, $tokenData['token_hash'])) {
             // Token is valid! Log the user in.
-            $userData = $this->user->getUserById($tokenData['user_id']); // You might need to add this method to User.php
-            
+            $userData = $this->user->getUserById($tokenData['user_id']);
+
             if ($userData) {
                 session_regenerate_id(true);
                 $_SESSION['user_id'] = $userData['id'];
                 $_SESSION['user_first_name'] = $userData['first_name'];
                 $_SESSION['last_activity'] = time();
+                $_SESSION['remember_me_active'] = true; // Mark this as a remember-me session
+                
                 return true;
             }
+        } else {
+            // Invalid validator - possible attack, delete cookie and token
+            setcookie('remember_me', '', time() - 3600, '/', '', false, true);
+            $deleteSql = "DELETE FROM auth_tokens WHERE selector = :selector";
+            $deleteStmt = $this->pdo->prepare($deleteSql);
+            $deleteStmt->execute([':selector' => $selector]);
         }
 
         return false;
@@ -127,13 +146,19 @@ class Auth
         $validator = bin2hex(random_bytes(32));
 
         // Hash the validator before storing it (Security Best Practice)
-        $token_hash = password_hash($validator, PASSWORD_DEFAULT); // or hash('sha256', $validator) if you prefer
+        $token_hash = password_hash($validator, PASSWORD_DEFAULT);
 
         // Set expiration (e.g., 30 days from now)
         $expires_at = date('Y-m-d H:i:s', time() + 86400 * 30);
 
-        // Store in auth_tokens table
-        $sql = "INSERT INTO auth_tokens (user_id, selector, token_hash, expires_at) VALUES (:user_id, :selector, :token_hash, :expires_at)";
+        // Clean up old tokens for this user (optional but recommended)
+        $cleanupSql = "DELETE FROM auth_tokens WHERE user_id = :user_id";
+        $cleanupStmt = $this->pdo->prepare($cleanupSql);
+        $cleanupStmt->execute([':user_id' => $userId]);
+
+        // Store new token in auth_tokens table
+        $sql = "INSERT INTO auth_tokens (user_id, selector, token_hash, expires_at) 
+                VALUES (:user_id, :selector, :token_hash, :expires_at)";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([
             ':user_id' => $userId,
@@ -141,15 +166,16 @@ class Auth
             ':token_hash' => $token_hash,
             ':expires_at' => $expires_at
         ]);
+
         // Set the cookie: "selector:validator"
         // We send the raw validator to the user, but keep the hash in DB
         setcookie(
             'remember_me',
             $selector . ':' . $validator,
-            time() + 86400 * 30,
+            time() + 86400 * 30, // 30 days
             '/',
             '',
-            false, // Secure (true if using HTTPS)
+            false, // Secure (set to true if using HTTPS)
             true   // HttpOnly (prevent JS access)
         );
     }
@@ -166,29 +192,33 @@ class Auth
                 $selector = $parts[0];
 
                 // 2. Remove the token from the database
-                // This is crucial: it invalidates the token server-side immediately.
                 $sql = "DELETE FROM auth_tokens WHERE selector = :selector";
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->execute([':selector' => $selector]);
             }
 
             // 3. Delete the cookie from the browser
-            // We do this by setting the expiration date to the past (time() - 3600)
             setcookie(
                 'remember_me',
                 '',
                 time() - 3600,
                 '/',
                 '',
-                false, // Secure (Change to true in production/HTTPS)
-                true   // HttpOnly
+                false,
+                true
             );
 
-            // Ensure PHP also knows it's gone for the rest of this request
+            // Ensure PHP knows it's gone for the rest of this request
             unset($_COOKIE['remember_me']);
         }
 
-        // 4. Standard Session Destruction
+        // 4. Delete session token cookie if it exists
+        if (isset($_COOKIE['session_token'])) {
+            setcookie('session_token', '', time() - 3600, '/');
+            unset($_COOKIE['session_token']);
+        }
+
+        // 5. Standard Session Destruction
         session_unset();
         session_destroy();
     }
