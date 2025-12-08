@@ -10,7 +10,7 @@ define('APP_URL', 'http://localhost/NextTrak');
 
 // Security configuration
 define('HASH_ALGO', PASSWORD_DEFAULT);
-define('SESSION_LIFETIME', 10); // 1 hour
+define('SESSION_LIFETIME', 1800); // 1 hour
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

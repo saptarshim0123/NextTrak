@@ -1,16 +1,16 @@
 <?php
+// Add this to your session_config.php AFTER session_start()
 
 if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', 1);
     ini_set('session.use_only_cookies', 1);
     ini_set('session.cookie_secure', 0);
+    ini_set('session.cookie_lifetime', 0); // Session cookie
     ini_set('session.gc_maxlifetime', SESSION_LIFETIME);
     session_start();
 
-    // If user is NOT logged in, but HAS a cookie, try to log them in
+    // COOKIE-BASED AUTO-LOGIN
     if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_me'])) {
-        // We need a DB connection here. 
-        // Since session_config is usually included early, ensure $pdo is available or include database.php here.
         if (isset($pdo)) {
             require_once __DIR__ . '/../src/classes/Auth.php';
             $auth = new Auth($pdo);
@@ -18,6 +18,29 @@ if (session_status() === PHP_SESSION_NONE) {
         }
     }
 
+    // **NEW: Session Token Validation**
+    // This ensures that if remember_me is NOT active, we validate the session token
+    if (isset($_SESSION['user_id']) && !isset($_SESSION['remember_me_active'])) {
+        // User is logged in but remember_me is NOT active
+        // Check if they have a valid session token
+        
+        if (!isset($_SESSION['session_token'])) {
+            // No session token - this shouldn't happen, but create one
+            $_SESSION['session_token'] = bin2hex(random_bytes(32));
+        }
+        
+        // Check if session token cookie exists and matches
+        if (!isset($_COOKIE['session_token']) || $_COOKIE['session_token'] !== $_SESSION['session_token']) {
+            // Session token mismatch - user closed browser and came back
+            // This is a new browser session, so log them out
+            session_unset();
+            session_destroy();
+            header('Location: ' . APP_URL . '/public/login.php');
+            exit;
+        }
+    }
+
+    // SESSION REGENERATION
     if (!isset($_SESSION['last_regen'])) {
         $_SESSION['last_regen'] = time();
     } elseif (time() - $_SESSION['last_regen'] > 1800) {
@@ -25,25 +48,19 @@ if (session_status() === PHP_SESSION_NONE) {
         $_SESSION['last_regen'] = time();
     }
 
-    if (isset($_SESSION['last_activity'])) {
-        $inactive_time = time() - $_SESSION['last_activity'];
-
-        if ($inactive_time > SESSION_LIFETIME) {
-            // Capture user_id status before destroying the session
-            $user_id_was_set = isset($_SESSION['user_id']);
-
-            session_unset();
-            session_destroy();
-
-            // Redirect only if the user was logged in before the timeout
-            if ($user_id_was_set) {
+    // INACTIVITY TIMEOUT
+    if (isset($_SESSION['user_id'])) {
+        if (isset($_SESSION['last_activity'])) {
+            $inactive_time = time() - $_SESSION['last_activity'];
+            if ($inactive_time > SESSION_LIFETIME) {
+                session_unset();
+                session_destroy();
                 header('Location: ' . APP_URL . '/public/login.php?timeout=1');
                 exit;
             }
         }
+        $_SESSION['last_activity'] = time();
     }
-
-    $_SESSION['last_activity'] = time();
 }
 
 function setFlashMessage($message, $type = 'success')
