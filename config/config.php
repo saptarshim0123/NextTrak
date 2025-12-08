@@ -12,8 +12,4 @@ define('APP_URL', 'http://localhost/NextTrak');
 define('HASH_ALGO', PASSWORD_DEFAULT);
 define('SESSION_LIFETIME', 1800); // 1 hour
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 date_default_timezone_set('UTC');

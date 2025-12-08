@@ -1,3 +1,10 @@
+<?php 
+require_once '../config/config.php';
+require_once '../config/database.php';
+require_once '../config/session_config.php';
+require_once '../src/core/functions.php';
+?>
+
 <?php include '../src/templates/header.php';?>
 
 <body>
