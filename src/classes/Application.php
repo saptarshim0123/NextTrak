@@ -1,24 +1,27 @@
 <?php
 
-class Application {
+class Application
+{
     private $pdo;
-    
-    public function __construct($pdo) {
+
+    public function __construct($pdo)
+    {
         $this->pdo = $pdo;
     }
-    public function create($data) {
+    public function create($data)
+    {
         try {
             $sql = "INSERT INTO job_applications (
                 user_id, company_id, status_id, job_title, job_url, 
                 salary, location, job_type, priority, application_date,
                 follow_up_date, follow_up_email, interview_date, notes
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            
+
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
                 $data['user_id'],
                 $data['company_id'],
-                $data['status_id'] ?? 1, 
+                $data['status_id'] ?? 1,
                 $data['job_title'],
                 $data['job_url'] ?? null,
                 $data['salary'] ?? null,
@@ -31,51 +34,78 @@ class Application {
                 $data['interview_date'] ?? null,
                 $data['notes'] ?? null
             ]);
-            
+
             return $this->pdo->lastInsertId();
         } catch (PDOException $e) {
             error_log("Application::create Error: " . $e->getMessage());
             return false;
         }
     }
-    public function getByUserId($user_id, $filters = []) {
+    public function getByUserId($user_id, $filters = [])
+    {
         try {
             $sql = "SELECT 
-                ja.*,
-                c.name as company_name,
-                c.website as company_website,
-                ast.status_name
-            FROM job_applications ja
-            LEFT JOIN companies c ON ja.company_id = c.id
-            LEFT JOIN application_statuses ast ON ja.status_id = ast.id
-            WHERE ja.user_id = ?";
-            
+            ja.*,
+            c.name as company_name,
+            c.website as company_website,
+            ast.status_name
+        FROM job_applications ja
+        LEFT JOIN companies c ON ja.company_id = c.id
+        LEFT JOIN application_statuses ast ON ja.status_id = ast.id
+        WHERE ja.user_id = ?";
+
             $params = [$user_id];
-            
+
+            // Status filter
             if (!empty($filters['status_id'])) {
                 $sql .= " AND ja.status_id = ?";
                 $params[] = $filters['status_id'];
             }
-            
+
+            // Job type filter
             if (!empty($filters['job_type'])) {
                 $sql .= " AND ja.job_type = ?";
                 $params[] = $filters['job_type'];
             }
-            
+
+            // Priority filter
             if (!empty($filters['priority'])) {
                 $sql .= " AND ja.priority = ?";
                 $params[] = $filters['priority'];
             }
-            
+
+            // Search filter
             if (!empty($filters['search'])) {
                 $sql .= " AND (c.name LIKE ? OR ja.job_title LIKE ?)";
                 $searchTerm = '%' . $filters['search'] . '%';
                 $params[] = $searchTerm;
                 $params[] = $searchTerm;
             }
-            
-            $sql .= " ORDER BY ja.application_date DESC";
-            
+
+            // Sorting
+            $sortBy = $filters['sort_by'] ?? 'application_date_desc';
+            switch ($sortBy) {
+                case 'application_date_asc':
+                    $sql .= " ORDER BY ja.application_date ASC";
+                    break;
+                case 'company_asc':
+                    $sql .= " ORDER BY c.name ASC";
+                    break;
+                case 'company_desc':
+                    $sql .= " ORDER BY c.name DESC";
+                    break;
+                case 'priority_desc':
+                    $sql .= " ORDER BY FIELD(ja.priority, 'High', 'Medium', 'Low')";
+                    break;
+                case 'salary_desc':
+                    $sql .= " ORDER BY ja.salary IS NULL, ja.salary DESC";
+                    break;
+                case 'application_date_desc':
+                default:
+                    $sql .= " ORDER BY ja.application_date DESC";
+                    break;
+            }
+
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
             return $stmt->fetchAll();
@@ -84,8 +114,9 @@ class Application {
             return [];
         }
     }
-    
-    public function getById($id, $user_id) {
+
+    public function getById($id, $user_id)
+    {
         try {
             $sql = "SELECT 
                 ja.*,
@@ -96,7 +127,7 @@ class Application {
             LEFT JOIN companies c ON ja.company_id = c.id
             LEFT JOIN application_statuses ast ON ja.status_id = ast.id
             WHERE ja.id = ? AND ja.user_id = ?";
-            
+
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([$id, $user_id]);
             return $stmt->fetch();
@@ -105,8 +136,9 @@ class Application {
             return false;
         }
     }
-    
-    public function update($id, $user_id, $data) {
+
+    public function update($id, $user_id, $data)
+    {
         try {
             $sql = "UPDATE job_applications SET
                 company_id = ?,
@@ -124,7 +156,7 @@ class Application {
                 notes = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ? AND user_id = ?";
-            
+
             $stmt = $this->pdo->prepare($sql);
             return $stmt->execute([
                 $data['company_id'],
@@ -148,8 +180,9 @@ class Application {
             return false;
         }
     }
-    
-    public function delete($id, $user_id) {
+
+    public function delete($id, $user_id)
+    {
         try {
             $sql = "DELETE FROM job_applications WHERE id = ? AND user_id = ?";
             $stmt = $this->pdo->prepare($sql);
@@ -159,8 +192,9 @@ class Application {
             return false;
         }
     }
-    
-    public function getStatsByUserId($user_id) {
+
+    public function getStatsByUserId($user_id)
+    {
         try {
             $sql = "SELECT 
                 COUNT(*) as total,
@@ -170,7 +204,7 @@ class Application {
                 SUM(CASE WHEN status_id = 4 THEN 1 ELSE 0 END) as rejected
             FROM job_applications
             WHERE user_id = ?";
-            
+
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([$user_id]);
             return $stmt->fetch();
@@ -185,13 +219,14 @@ class Application {
             ];
         }
     }
-    
-    public function updateStatus($id, $user_id, $status_id) {
+
+    public function updateStatus($id, $user_id, $status_id)
+    {
         try {
             $sql = "UPDATE job_applications 
                     SET status_id = ?, updated_at = CURRENT_TIMESTAMP 
                     WHERE id = ? AND user_id = ?";
-            
+
             $stmt = $this->pdo->prepare($sql);
             return $stmt->execute([$status_id, $id, $user_id]);
         } catch (PDOException $e) {
@@ -199,8 +234,9 @@ class Application {
             return false;
         }
     }
-    
-    public function getFollowUpsDue($user_id) {
+
+    public function getFollowUpsDue($user_id)
+    {
         try {
             $sql = "SELECT 
                 ja.*,
@@ -214,7 +250,7 @@ class Application {
             AND ja.follow_up_date <= CURDATE()
             AND ja.status_id NOT IN (3, 4)
             ORDER BY ja.follow_up_date ASC";
-            
+
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([$user_id]);
             return $stmt->fetchAll();

@@ -118,7 +118,27 @@ try {
 }
 
 $stats = $appObj->getStatsByUserId($user['id']);
-$applications = $appObj->getByUserId($user['id']);
+
+// Build filters array from GET parameters
+$filters = [];
+if (!empty($_GET['filter_status'])) {
+    $filters['status_id'] = intval($_GET['filter_status']);
+}
+if (!empty($_GET['filter_job_type'])) {
+    $filters['job_type'] = $_GET['filter_job_type'];
+}
+if (!empty($_GET['filter_priority'])) {
+    $filters['priority'] = $_GET['filter_priority'];
+}
+if (!empty($_GET['filter_search'])) {
+    $filters['search'] = sanitizeInput($_GET['filter_search']);
+}
+if (!empty($_GET['sort_by'])) {
+    $filters['sort_by'] = $_GET['sort_by'];
+}
+
+$applications = $appObj->getByUserId($user['id'], $filters);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -349,20 +369,89 @@ $applications = $appObj->getByUserId($user['id']);
                     <div class="card-header bg-white border-0 py-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0 fw-semibold">Recent Applications</h5>
-                            <a href="#" class="btn btn-outline-success btn-md me-2">
-                                <i data-lucide="filter" class="me-1" style="width: 16px; height: 16px;"></i>
-                                Filter
-                            </a>
-
-                            <a href="#" class="btn btn-outline-success btn-md me-2">
-                                <i data-lucide="arrow-up-down" class="me-1" style="width: 16px; height: 16px;"></i>
-                                Sort
-                            </a>
                             <a href="#" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                                data-bs-target="#addApplicationModal">
-                                <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
-                                Add Application
-                            </a>
+                            data-bs-target="#addApplicationModal">
+                            <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
+                            Add Application
+                        </a>
+                    </div>
+                    <button class="btn btn-outline-success btn-sm" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#filterPanel">
+                        <i data-lucide="filter" class="me-1" style="width: 16px; height: 16px;"></i>
+                        Filters
+                        <span class="badge bg-success ms-1" id="activeFilterCount"
+                            style="display: none;">0</span>
+                    </button>
+                    </div>
+                    <!-- Filter Panel -->
+                    <div class="collapse" id="filterPanel">
+                        <div class="card-body border-bottom bg-light">
+                            <form method="GET" action="index.php" id="filterForm">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold small">Status</label>
+                                        <select class="form-select form-select-sm" name="filter_status" id="filter_status">
+                                            <option value="">All Statuses</option>
+                                            <?php foreach ($statuses as $status): ?>
+                                                <option value="<?php echo $status['id']; ?>" 
+                                                    <?php echo (isset($_GET['filter_status']) && $_GET['filter_status'] == $status['id']) ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($status['status_name']); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold small">Job Type</label>
+                                        <select class="form-select form-select-sm" name="filter_job_type" id="filter_job_type">
+                                            <option value="">All Types</option>
+                                            <option value="WFH" <?php echo (isset($_GET['filter_job_type']) && $_GET['filter_job_type'] == 'WFH') ? 'selected' : ''; ?>>Work From Home</option>
+                                            <option value="WFO" <?php echo (isset($_GET['filter_job_type']) && $_GET['filter_job_type'] == 'WFO') ? 'selected' : ''; ?>>Work From Office</option>
+                                            <option value="Hybrid" <?php echo (isset($_GET['filter_job_type']) && $_GET['filter_job_type'] == 'Hybrid') ? 'selected' : ''; ?>>Hybrid</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold small">Priority</label>
+                                        <select class="form-select form-select-sm" name="filter_priority" id="filter_priority">
+                                            <option value="">All Priorities</option>
+                                            <option value="Low" <?php echo (isset($_GET['filter_priority']) && $_GET['filter_priority'] == 'Low') ? 'selected' : ''; ?>>Low</option>
+                                            <option value="Medium" <?php echo (isset($_GET['filter_priority']) && $_GET['filter_priority'] == 'Medium') ? 'selected' : ''; ?>>Medium</option>
+                                            <option value="High" <?php echo (isset($_GET['filter_priority']) && $_GET['filter_priority'] == 'High') ? 'selected' : ''; ?>>High</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold small">Search</label>
+                                        <input type="text" class="form-control form-control-sm" name="filter_search" id="filter_search" 
+                                            placeholder="Company or job title..." 
+                                            value="<?php echo htmlspecialchars($_GET['filter_search'] ?? ''); ?>">
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold small">Sort By</label>
+                                        <select class="form-select form-select-sm" name="sort_by" id="sort_by">
+                                            <option value="application_date_desc" <?php echo (!isset($_GET['sort_by']) || $_GET['sort_by'] == 'application_date_desc') ? 'selected' : ''; ?>>Application Date (Newest)</option>
+                                            <option value="application_date_asc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'application_date_asc') ? 'selected' : ''; ?>>Application Date (Oldest)</option>
+                                            <option value="company_asc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'company_asc') ? 'selected' : ''; ?>>Company (A-Z)</option>
+                                            <option value="company_desc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'company_desc') ? 'selected' : ''; ?>>Company (Z-A)</option>
+                                            <option value="priority_desc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'priority_desc') ? 'selected' : ''; ?>>Priority (High-Low)</option>
+                                            <option value="salary_desc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'salary_desc') ? 'selected' : ''; ?>>Salary (High-Low)</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-md-9 d-flex align-items-end gap-2">
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+                                            Apply Filters
+                                        </button>
+                                        <button href="index.php" class="btn btn-outline-danger btn-sm">
+                                            <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                                            Clear All
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -902,6 +991,34 @@ $applications = $appObj->getByUserId($user['id']);
             var addModal = new bootstrap.Modal(document.getElementById('addApplicationModal'));
             addModal.show();
         <?php endif; ?>
+        // Update active filter count badge
+    function updateFilterBadge() {
+        const urlParams = new URLSearchParams(window.location.search);
+        let activeFilters = 0;
+        
+        if (urlParams.get('filter_status')) activeFilters++;
+        if (urlParams.get('filter_job_type')) activeFilters++;
+        if (urlParams.get('filter_priority')) activeFilters++;
+        if (urlParams.get('filter_search')) activeFilters++;
+        
+        const badge = document.getElementById('activeFilterCount');
+        if (activeFilters > 0) {
+            badge.textContent = activeFilters;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // Run on page load
+    updateFilterBadge();
+
+    // Auto-submit on filter change (optional - remove if you prefer manual Apply button)
+    document.querySelectorAll('#filterForm select').forEach(select => {
+        select.addEventListener('change', () => {
+            document.getElementById('filterForm').submit();
+        });
+    });
     </script>
 </body>
 
