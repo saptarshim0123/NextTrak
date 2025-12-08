@@ -227,6 +227,100 @@ $applications = $appObj->getByUserId($user['id'], $filters);
         .expandable-details.show .delete-btn {
             opacity: 1;
         }
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #E5E7EB;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1050;
+            margin-top: -1px;
+        }
+
+        .autocomplete-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid #F3F4F6;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover {
+            background-color: #F9FAFB;
+        }
+
+        .autocomplete-item.active {
+            background-color: #EEF2FF;
+        }
+
+        .company-logo-autocomplete {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            object-fit: contain;
+            background: #F3F4F6;
+            padding: 4px;
+        }
+
+        .company-logo-fallback {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, var(--bs-primary), var(--bs-accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .autocomplete-no-results {
+            padding: 16px;
+            text-align: center;
+            color: #6B7280;
+            font-size: 14px;
+        }
+
+        .company-icon-wrapper {
+            position: relative;
+            width: 40px;
+            height: 40px;
+        }
+
+        .company-logo-main {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: contain;
+            background: #F3F4F6;
+            padding: 6px;
+        }
+
+        .company-logo-fallback-main {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--bs-primary), var(--bs-accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+        }
     </style>
 </head>
 
@@ -491,9 +585,22 @@ $applications = $appObj->getByUserId($user['id'], $filters);
                                                 </td>
                                                 <td>
                                                     <div class="d-flex align-items-center">
-                                                        <div class="company-icon bg-primary rounded p-2 me-2">
-                                                            <i data-lucide="building"
-                                                                style="width: 16px; height: 16px; color: white;"></i>
+                                                        <?php
+                                                        $logoUrl = !empty($app['company_website']) 
+                                                            ? 'https://logo.clearbit.com/' . preg_replace('/^www\./i', '', $app['company_website'])
+                                                            : null;
+                                                        $initials = strtoupper(substr($app['company_name'], 0, 2));
+                                                        ?>
+                                                        <div class="company-icon-wrapper me-2">
+                                                            <?php if ($logoUrl): ?>
+                                                                <img src="<?php echo $logoUrl; ?>" 
+                                                                    alt="<?php echo htmlspecialchars($app['company_name']); ?>"
+                                                                    class="company-logo-main"
+                                                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                            <?php endif; ?>
+                                                            <div class="company-logo-fallback-main" style="<?php echo $logoUrl ? 'display:none;' : 'display:flex;'; ?>">
+                                                                <?php echo $initials; ?>
+                                                            </div>
                                                         </div>
                                                         <strong><?php echo htmlspecialchars($app['company_name']); ?></strong>
                                                     </div>
@@ -788,8 +895,17 @@ $applications = $appObj->getByUserId($user['id'], $filters);
                                 <label for="company_name" class="form-label fw-semibold">
                                     Company Name <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" class="form-control" id="company_name" name="company_name"
-                                    placeholder="e.g., Google, Microsoft" required>
+                                <div class="position-relative">
+                                    <input type="text" class="form-control" id="company_name" name="company_name"
+                                        placeholder="Start typing company name..." 
+                                        autocomplete="off" required>
+                                    <input type="hidden" id="company_website" name="company_website">
+                                    
+                                    <!-- Autocomplete Dropdown -->
+                                    <div id="companyAutocomplete" class="autocomplete-dropdown" style="display: none;">
+                                        <!-- Results will be populated here -->
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label for="job_title" class="form-label fw-semibold">
@@ -1019,6 +1135,154 @@ $applications = $appObj->getByUserId($user['id'], $filters);
             document.getElementById('filterForm').submit();
         });
     });
+
+    // Company Autocomplete
+    const companyInput = document.getElementById('company_name');
+    const companyWebsiteInput = document.getElementById('company_website');
+    const autocompleteDropdown = document.getElementById('companyAutocomplete');
+    let autocompleteTimeout;
+    let selectedIndex = -1;
+    let autocompleteResults = [];
+
+    if (companyInput) {
+        companyInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            clearTimeout(autocompleteTimeout);
+            
+            if (query.length < 2) {
+                hideAutocomplete();
+                return;
+            }
+            
+            autocompleteTimeout = setTimeout(() => {
+                fetchCompanies(query);
+            }, 300);
+        });
+        
+        companyInput.addEventListener('keydown', function(e) {
+            const items = autocompleteDropdown.querySelectorAll('.autocomplete-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                updateSelection(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, -1);
+                updateSelection(items);
+            } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                e.preventDefault();
+                items[selectedIndex].click();
+            } else if (e.key === 'Escape') {
+                hideAutocomplete();
+            }
+        });
+        
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!companyInput.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+                hideAutocomplete();
+            }
+        });
+    }
+
+    function fetchCompanies(query) {
+        fetch(`../../src/api/search_companies.php?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                autocompleteResults = data;
+                displayAutocomplete(data);
+            })
+            .catch(error => {
+                console.error('Autocomplete error:', error);
+            });
+    }
+
+    function displayAutocomplete(companies) {
+        if (companies.length === 0) {
+            autocompleteDropdown.innerHTML = `
+                <div class="autocomplete-no-results">
+                    <i data-lucide="search" style="width: 20px; height: 20px;"></i>
+                    <div class="mt-2">No companies found. Type to add a new one.</div>
+                </div>
+            `;
+            autocompleteDropdown.style.display = 'block';
+            lucide.createIcons();
+            return;
+        }
+        
+        const html = companies.map((company, index) => `
+            <div class="autocomplete-item" data-index="${index}" data-name="${company.name}" data-website="${company.website || ''}">
+                ${getCompanyLogoHTML(company)}
+                <div>
+                    <div class="fw-semibold">${company.name}</div>
+                    ${company.website ? `<small class="text-muted">${company.website}</small>` : ''}
+                </div>
+            </div>
+        `).join('');
+        
+        autocompleteDropdown.innerHTML = html;
+        autocompleteDropdown.style.display = 'block';
+        selectedIndex = -1;
+        
+        // Add click handlers
+        autocompleteDropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+            item.addEventListener('click', function() {
+                selectCompany(this.dataset.name, this.dataset.website);
+            });
+        });
+    }
+
+    function getCompanyLogoHTML(company) {
+        if (company.logo_url && company.website) {
+            return `
+                <img src="${company.logo_url}" 
+                    alt="${company.name}" 
+                    class="company-logo-autocomplete"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="company-logo-fallback" style="display: none;">
+                    ${getInitials(company.name)}
+                </div>
+            `;
+        }
+        return `
+            <div class="company-logo-fallback">
+                ${getInitials(company.name)}
+            </div>
+        `;
+    }
+
+    function getInitials(name) {
+        return name
+            .split(' ')
+            .map(word => word[0])
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
+    }
+
+    function selectCompany(name, website) {
+        companyInput.value = name;
+        companyWebsiteInput.value = website || '';
+        hideAutocomplete();
+    }
+
+    function hideAutocomplete() {
+        autocompleteDropdown.style.display = 'none';
+        selectedIndex = -1;
+    }
+
+    function updateSelection(items) {
+        items.forEach((item, index) => {
+            if (index === selectedIndex) {
+                item.classList.add('active');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
     </script>
 </body>
 
