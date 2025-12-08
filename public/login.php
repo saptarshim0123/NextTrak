@@ -1,4 +1,4 @@
-<?php 
+<?php
 require_once '../config/database.php';
 require_once '../config/session_config.php';
 require_once '../src/core/functions.php';
@@ -18,11 +18,12 @@ if (isset($_GET['timeout']) && $_GET['timeout'] == '1') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = sanitizeInput($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
-    
+    $remember = isset($_POST['remember']); // Check if the checkbox was submitted
+
     $auth = new Auth($pdo);
-    
-    $result = $auth->login($email, $password);
-    
+
+    $result = $auth->login($email, $password, $remember); // Pass the flag
+
     if ($result === true) {
         redirect('/public/dashboard/index.php');
     } else {
@@ -30,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-include '../src/templates/header.php';?>
+include '../src/templates/header.php'; ?>
 
 <body class="bg-light">
     <!-- Navigation -->
