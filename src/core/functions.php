@@ -138,10 +138,6 @@ function generateRandomString($length = 32)
     return bin2hex(random_bytes($length / 2));
 }
 
-/**
- * Get company logo URL using proxy to bypass browser tracking prevention
- * Properly extracts domain from URL and constructs proxy URL
- */
 function getCompanyLogo($website)
 {
     if (empty($website)) {

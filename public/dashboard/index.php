@@ -520,6 +520,8 @@ $applications = $appObj->getByUserId($user['id'], $filters);
                                         <select class="form-select form-select-sm" name="sort_by" id="sort_by">
                                             <option value="application_date_desc" <?php echo (!isset($_GET['sort_by']) || $_GET['sort_by'] == 'application_date_desc') ? 'selected' : ''; ?>>Application Date (Newest)</option>
                                             <option value="application_date_asc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'application_date_asc') ? 'selected' : ''; ?>>Application Date (Oldest)</option>
+                                            <option value="interview_date_desc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'interview_date_desc') ? 'selected' : ''; ?>>Interview Date (High-Low)</option>
+                                            <option value="interview_date_asc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'interview_date_asc') ? 'selected' : ''; ?>>Interview Date (Low-High)</option>
                                             <option value="company_asc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'company_asc') ? 'selected' : ''; ?>>Company (A-Z)</option>
                                             <option value="company_desc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'company_desc') ? 'selected' : ''; ?>>Company (Z-A)</option>
                                             <option value="priority_desc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'priority_desc') ? 'selected' : ''; ?>>Priority (High-Low)</option>
@@ -532,10 +534,10 @@ $applications = $appObj->getByUserId($user['id'], $filters);
                                             <i data-lucide="search" style="width: 14px; height: 14px;"></i>
                                             Apply Filters
                                         </button>
-                                        <button href="index.php" class="btn btn-outline-danger btn-sm">
+                                        <a href="index.php" class="btn btn-outline-danger btn-sm">
                                             <i data-lucide="x" style="width: 14px; height: 14px;"></i>
                                             Clear All
-                                        </button>
+                                        </a>
                                     </div>
                                 </div>
                             </form>
@@ -567,6 +569,7 @@ $applications = $appObj->getByUserId($user['id'], $filters);
                                             <th>Status</th>
                                             <th>Applied Date</th>
                                             <th>Priority</th>
+                                            <th>Salary</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -609,6 +612,9 @@ $applications = $appObj->getByUserId($user['id'], $filters);
                                                         class="badge bg-<?php echo $app['priority'] === 'High' ? 'danger' : ($app['priority'] === 'Medium' ? 'warning' : 'secondary'); ?>">
                                                         <?php echo htmlspecialchars($app['priority']); ?>
                                                     </span>
+                                                </td>
+                                                <td>
+                                                    <?php echo '$' . $app['salary'] ?>
                                                 </td>
                                             </tr>
                                             <tr>

@@ -100,6 +100,12 @@ class Application
                 case 'salary_desc':
                     $sql .= " ORDER BY ja.salary IS NULL, ja.salary DESC";
                     break;
+                case 'interview_date_desc':
+                    $sql .= " ORDER BY ja.interview_date IS NULL, ja.interview_date DESC";
+                    break;
+                case 'interview_date_asc':
+                    $sql .= " ORDER BY ja.interview_date IS NULL, ja.interview_date ASC";
+                    break;
                 case 'application_date_desc':
                 default:
                     $sql .= " ORDER BY ja.application_date DESC";
