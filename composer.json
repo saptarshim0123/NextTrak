@@ -1,0 +1,17 @@
+{
+    "name": "nexttrak/job-tracker",
+    "description": "NextTrak - Smart Job Application Tracking System",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "phpmailer/phpmailer": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "NextTrak\\": "src/"
+        }
+    },
+    "config": {
+        "vendor-dir": "vendor"
+    }
+}

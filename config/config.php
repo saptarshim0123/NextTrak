@@ -13,3 +13,6 @@ define('HASH_ALGO', PASSWORD_DEFAULT);
 define('SESSION_LIFETIME', 1800); // 1 hour
 
 date_default_timezone_set('UTC');
+
+// Load email configuration
+require_once __DIR__ . '/config_email.php';
